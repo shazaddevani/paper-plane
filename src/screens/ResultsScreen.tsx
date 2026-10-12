@@ -113,9 +113,12 @@ export function ResultsScreen({
   const { levelAfter, leveledUp } = application;
   const padding = useScreenPadding(12);
 
+  // Leaving early is not the same as running out of planes.
   const outcome =
     summary.yardsCleared <= 0
-      ? 'Out of planes'
+      ? summary.planesUsed < summary.planesTotal
+        ? 'Left the yard'
+        : 'Out of planes'
       : summary.yardsCleared === 1
         ? 'One yard done'
         : `${summary.yardsCleared} yards done`;

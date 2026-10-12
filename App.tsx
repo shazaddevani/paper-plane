@@ -18,6 +18,7 @@ import { RotatePrompt } from './src/components/Rotate';
 import { describeItem } from './src/game/catalog';
 import { PALETTE } from './src/game/constants';
 import { dailySeed, todayKey } from './src/game/rng';
+import { preloadSounds, setSoundEnabled } from './src/game/sound';
 import { RunSummary } from './src/game/rewards';
 import { GameScreen } from './src/screens/GameScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -111,6 +112,14 @@ function Root() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    preloadSounds();
+  }, []);
+
+  useEffect(() => {
+    if (profile) setSoundEnabled(profile.soundOn);
+  }, [profile]);
 
   const commit = useCallback((next: Profile) => {
     setProfile(next);
@@ -220,6 +229,7 @@ function Root() {
           onOpenShed={() => setRoute({ name: 'shed' })}
           onOpenStickers={() => setRoute({ name: 'stickers' })}
           onOpenHowTo={() => setRoute({ name: 'howto' })}
+          onToggleSound={() => commit({ ...profile, soundOn: !profile.soundOn })}
         />
       ) : null}
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { LiveCity } from '../components/LiveCity';
 import { PlaneEmblem } from '../components/PlaneEmblem';
@@ -30,6 +30,7 @@ export function HomeScreen({
   onOpenShed,
   onOpenStickers,
   onOpenHowTo,
+  onToggleSound,
 }: {
   profile: Profile;
   onPlayDaily: () => void;
@@ -37,6 +38,7 @@ export function HomeScreen({
   onOpenShed: () => void;
   onOpenStickers: () => void;
   onOpenHowTo: () => void;
+  onToggleSound: () => void;
 }) {
   const today = todayKey();
   const [countdown, setCountdown] = useState(() => msUntilNextDay());
@@ -72,7 +74,18 @@ export function HomeScreen({
           </View>
 
           <View style={styles.headerRight}>
-            <CoinPill amount={profile.coins} />
+            <View style={styles.headerPills}>
+              <Pressable
+                accessibilityRole="switch"
+                accessibilityState={{ checked: profile.soundOn }}
+                accessibilityLabel="Sound effects"
+                onPress={onToggleSound}
+                style={({ pressed }) => [styles.soundPill, pressed && styles.soundPillPressed]}
+              >
+                <Text style={styles.soundText}>{profile.soundOn ? 'Sound on' : 'Sound off'}</Text>
+              </Pressable>
+              <CoinPill amount={profile.coins} />
+            </View>
             <View style={styles.levelBlock}>
               <Text style={styles.levelText}>Level {info.level}</Text>
               <ProgressBar progress={info.progress} height={6} tint={PALETTE.sticky} />
@@ -189,6 +202,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     marginTop: 5,
+  },
+  headerPills: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  soundPill: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(244, 239, 228, 0.35)',
+    backgroundColor: 'rgba(10, 14, 28, 0.35)',
+  },
+  soundPillPressed: {
+    backgroundColor: 'rgba(244, 239, 228, 0.18)',
+  },
+  soundText: {
+    color: '#F4EFE4',
+    fontSize: 12,
+    fontWeight: '800',
   },
   headerRight: {
     alignItems: 'flex-end',

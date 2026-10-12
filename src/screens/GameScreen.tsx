@@ -5,6 +5,7 @@ import { useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { Backdrop } from '../components/Backdrop';
 import { CoachPrompt } from '../components/CoachPrompt';
+import { POPUP_MS, ScorePopup, ScorePopups } from '../components/ScorePopups';
 import { YardLaunch } from '../components/YardLaunch';
 import { FILL } from '../components/fill';
 import { Hud } from '../components/Hud';
@@ -17,6 +18,7 @@ import { computeLayout } from '../game/layout';
 import { generateLevel } from '../game/levelGen';
 import { DamageEvent, GameWorld, STRIDE } from '../game/physics';
 import { RunSummary } from '../game/rewards';
+import { breakSound, playSfx } from '../game/sound';
 import { pickYardTheme } from '../game/yardTheme';
 import { Profile } from '../storage/profile';
 
@@ -202,6 +204,15 @@ export function GameScreen({
     coach: coachLine(coach, 1, 'ready', 0, { climb: false, dive: false }),
   });
 
+  const [popups, setPopups] = useState<ScorePopup[]>([]);
+  const popupId = useRef(0);
+  const addPopup = useCallback((x: number, y: number, text: string, color: string) => {
+    popupId.current += 1;
+    const id = popupId.current;
+    setPopups((list) => [...list.slice(-5), { id, x, y, text, color }]);
+    setTimeout(() => setPopups((list) => list.filter((item) => item.id !== id)), POPUP_MS + 60);
+  }, []);
+
   const statsDirty = useRef(true);
   const lastStatsPush = useRef(0);
 
@@ -317,6 +328,7 @@ export function GameScreen({
     );
     foldCurrentYard();
     session.yardsCleared += 1;
+    playSfx('clear');
     phaseRef.current = 'cleared';
     holdingRef.current = false;
     divingRef.current = false;
@@ -353,10 +365,20 @@ export function GameScreen({
         run.bestCombo = Math.max(run.bestCombo, run.combo);
 
         if (event.kind === 'balloon') {
+          playSfx('pop');
           run.balloonsPopped += 1;
           run.score += BALLOON.score * run.combo;
+          addPopup(
+            event.x,
+            event.y,
+            run.combo > 1
+              ? `+${(BALLOON.score * run.combo).toLocaleString()} ${run.combo}x`
+              : `+${BALLOON.score}`,
+            '#FFF4D6',
+          );
           buzz(Haptics.ImpactFeedbackStyle.Heavy);
         } else {
+          playSfx(breakSound(event.material));
           run.itemsSmashed += 1;
           run.yardSmashed += 1;
           run.bestYardSmashed = Math.max(run.bestYardSmashed, run.yardSmashed);
@@ -370,7 +392,9 @@ export function GameScreen({
       statsDirty.current = true;
     };
 
-    const onHoopPass = ({ hoopIndex }: { hoopIndex: number }) => {
+    const onHoopPass = ({ hoopIndex, x, y }: { hoopIndex: number; x: number; y: number }) => {
+      playSfx('hoop');
+      addPopup(x, y, `+${Math.round(SCORING.hoopPass * tune.hoopScoreScale)}`, '#FFD86A');
       run.hoopPasses += 1;
       run.throwHoops += 1;
       run.bestThrowHoops = Math.max(run.bestThrowHoops, run.throwHoops);
@@ -415,7 +439,7 @@ export function GameScreen({
       instance.destroy();
       worldRef.current = null;
     };
-  }, [buzz, frame, level, planeFrame, pushStats, tune, upgrade]);
+  }, [addPopup, buzz, frame, level, planeFrame, pushStats, tune, upgrade]);
 
   useEffect(() => {
     if (!world) return;
@@ -536,6 +560,7 @@ export function GameScreen({
           (world.hasLanded || world.isPlaneStopped() || run.flightElapsed > FLIGHT_TIMEOUT_MS)
         ) {
           world.crushPlane();
+          playSfx('crumple');
           holdingRef.current = false;
           divingRef.current = false;
           holdStartRef.current = 0;
@@ -615,6 +640,7 @@ export function GameScreen({
     });
 
     leadRef.current = 0.28;
+    playSfx('throw');
     run.throwsUsed += 1;
     run.throwHoops = 0;
     run.flightElapsed = 0;
@@ -763,6 +789,8 @@ export function GameScreen({
           onExit={leaveYard}
         />
       )}
+      <ScorePopups items={popups} cameraX={cameraX} layout={layout} />
+
       {stats.phase === 'cleared' || stats.phase === 'done' ? null : (
         <CoachPrompt text={stats.coach} />
       )}

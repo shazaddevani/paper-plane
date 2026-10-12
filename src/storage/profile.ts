@@ -39,6 +39,8 @@ export type Profile = {
   equipped: EquippedSlots;
   /** Set once the player has been shown how to throw, so it only opens itself the first time. */
   seenHowTo: boolean;
+  /** Sound effects on or off. */
+  soundOn: boolean;
   totals: {
     runs: number;
     clears: number;
@@ -62,6 +64,7 @@ export const DEFAULT_PROFILE: Profile = {
   unlocked: [DEFAULT_PAPER, 'streamer-none', DEFAULT_STREAMER],
   equipped: { paper: DEFAULT_PAPER, streamer: DEFAULT_STREAMER, upgrade: null },
   seenHowTo: false,
+  soundOn: true,
   totals: { runs: 0, clears: 0, balloons: 0, hoops: 0, powerDives: 0, items: 0 },
 };
 
@@ -91,6 +94,7 @@ function normalize(raw: unknown): Profile {
     equipped,
     // Anyone who already has runs on the board knows how to throw.
     seenHowTo: stored.seenHowTo ?? (stored.totals?.runs ?? 0) > 0,
+    soundOn: stored.soundOn ?? true,
     totals: { ...DEFAULT_PROFILE.totals, ...(stored.totals ?? {}) },
   };
 }

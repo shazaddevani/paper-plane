@@ -28,14 +28,16 @@ function Hoop({
   const flash = useSharedValue(0);
   registry.current[index] = flash;
 
+  // Flying through kicks the hoop out and throws a bright ring off it, so a
+  // pass is obvious even in the corner of your eye.
   const ringStyle = useAnimatedStyle(() => ({
     opacity: 0.9 + flash.value * 0.1,
-    transform: [{ scale: 1 + flash.value * 0.16 }],
+    transform: [{ scale: 1 + flash.value * 0.32 }],
   }));
 
   const glowStyle = useAnimatedStyle(() => ({
-    opacity: flash.value * 0.5,
-    transform: [{ scale: 1 + flash.value * 0.5 }],
+    opacity: flash.value * 0.7,
+    transform: [{ scale: 1 + (1 - flash.value) * 0.9 + flash.value * 0.2 }],
   }));
 
   return (

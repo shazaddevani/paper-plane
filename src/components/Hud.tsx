@@ -78,9 +78,6 @@ export function Hud({
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
-            <Text style={styles.powerName} numberOfLines={1}>
-              {stats.powerName}
-            </Text>
           </View>
 
           <View style={styles.scoreBlock}>
@@ -228,15 +225,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(8, 6, 12, 0.72)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
-  },
-  powerName: {
-    ...INK_MUTED,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
-    marginTop: 3,
-    textAlign: 'left',
   },
   scoreBlock: {
     ...NO_TOUCH,
