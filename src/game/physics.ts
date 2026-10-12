@@ -186,6 +186,8 @@ export class GameWorld {
   private loopStartFacing: 1 | -1 = 1;
   private loopSteps = 0;
   private holdSteps = 0;
+  /** Steps left of nose-down after a dive is released. */
+  private diveCarry = 0;
   private loopRadius: number = PHYSICS.loopMaxRadius;
   private prevRoll = 1;
   private grounded = false;
@@ -627,6 +629,7 @@ export class GameWorld {
     this.pierce = Boolean(options.pierce);
     this.smash = Boolean(options.smash);
     this.facing = 1;
+    this.diveCarry = 0;
     this.roll = 1;
     this.prevRoll = 1;
     this.looping = false;
@@ -767,7 +770,7 @@ export class GameWorld {
       const trim = Math.max(
         PHYSICS.trimMaxClimb,
         Math.min(
-          PHYSICS.diveAngle,
+          PHYSICS.trimMaxDive,
           PHYSICS.glideAngle * this.glideScale - (speed - PHYSICS.trimSpeed) * PHYSICS.trimGain,
         ),
       );
@@ -777,9 +780,12 @@ export class GameWorld {
         this.loopSteps += 1;
         const ease = Math.min(1, this.loopSteps / PHYSICS.loopRampSteps);
         rate = (speed / this.loopRadius) * this.loopScale * (0.3 + 0.7 * ease);
-      } else if (diving) {
-        commanded = headingCommand(this.facing, PHYSICS.diveAngle * this.diveScale);
-        rate = PHYSICS.turnRate * Math.max(0.7, this.diveScale);
+      } else if (diving || (!holding && this.diveCarry > 0)) {
+        // Diving, or just let go of a dive: the nose stays down a moment
+        // before the dart swoops, so a dive can actually reach low targets.
+        const carry = diving ? 1 : 0.8;
+        commanded = headingCommand(this.facing, PHYSICS.diveAngle * this.diveScale * carry);
+        rate = PHYSICS.diveTurnRate * Math.max(0.7, this.diveScale);
       } else if (holding) {
         // A tap lifts the nose a little; the longer the hold, the steeper the
         // climb, until it rolls into the loop. Near stall the wing stops
@@ -801,7 +807,10 @@ export class GameWorld {
       }
     }
 
-    const speedFactor = holding || this.looping
+    if (diving) this.diveCarry = PHYSICS.diveCarrySteps;
+    else if (this.diveCarry > 0) this.diveCarry -= 1;
+
+    const speedFactor = holding || this.looping || diving || this.diveCarry > 0
       ? Math.max(0.85, Math.min(PHYSICS.maxTurnBoost, (speed / PHYSICS.turnRefSpeed) ** 2))
       : Math.min(PHYSICS.maxTurnBoost, (speed / PHYSICS.turnRefSpeed) ** 2);
     const authority = this.looping ? rate * this.turnScale : rate * this.turnScale * speedFactor;

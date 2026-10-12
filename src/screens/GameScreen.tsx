@@ -596,8 +596,9 @@ export function GameScreen({
 
   const pressMove = useCallback((dy: number) => {
     if (phaseRef.current !== 'flight' || !holdingRef.current) return;
-    // iPhone presses jitter 20–50px. Only a real downward swipe counts as a dive.
-    const pullingDown = divingRef.current ? dy > 72 : dy > 110;
+    // A short, clear drag down dives. Held-finger jitter stays well under 50px
+    // in practice; the old 110px asked for a third of the screen.
+    const pullingDown = divingRef.current ? dy > 30 : dy > 52;
     if (pullingDown === divingRef.current) return;
     if (pullingDown) holdStartRef.current = 0;
     else if (holdingRef.current) holdStartRef.current = performance.now();

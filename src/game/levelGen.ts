@@ -1,4 +1,4 @@
-import { BALLOON, GROUND_Y, MaterialKey, RUN } from './constants';
+import { BALLOON, GROUND_Y, MaterialKey, PLANE_START_X, PLANE_START_Y, RUN } from './constants';
 import { createRng, mixSeed, Rng } from './rng';
 
 export type BlockSpec = {
@@ -41,6 +41,9 @@ export type LevelSpec = {
   hoops: HoopSpec[];
   worldWidth: number;
 };
+
+/** Height lost per unit flown by a hands-off glide, for placing Yard 1's easy balloon. */
+const YARD_ONE_GLIDE_SLOPE = 0.198;
 
 /** Close enough that a slow glide still reaches the first pile on a phone. */
 const FIRST_STACK_X = 720;
@@ -228,6 +231,7 @@ export function generateLevel(seed: number, dayKey: string | null, stage = 1): L
   // Later yards start taller and leave wider gaps, so the chain stops paying off.
   const tallest = clamp(2 + stageIndex, 3, 7);
 
+  let lastStackEnd = stackX;
   for (let i = 0; i < stackCount; i += 1) {
     const rows = Math.max(1, tallest - i);
     const withCavity =
@@ -237,18 +241,33 @@ export function generateLevel(seed: number, dayKey: string | null, stage = 1): L
     const stack = buildStack(rng, stackX, rows, difficulty, withCavity, `s${i}`);
     blocks.push(...stack.blocks);
     balloons.push(...stack.balloons);
+    lastStackEnd = stackX + stack.width;
     const gapMin = 100 + (stageIndex - 1) * 18 + pastCap * 24;
     const gap = rng.range(gapMin, gapMin + 70);
     stackX += stack.width + gap;
   }
 
-  if (stageIndex === 1 && balloons.length < 3) {
+  if (stageIndex === 1) {
+    // Yard 1 is the lesson. One balloon sits on the plain glide line so the
+    // first tap pops it, one floats high so it takes a climb, and one is tied
+    // low past the stacks so it takes a dive. A lucky tap no longer clears it.
+    const floats = balloons
+      .filter((b) => b.anchorY !== null)
+      .sort((a, b) => a.x - b.x);
+    const glideY = (x: number) => PLANE_START_Y + (x - PLANE_START_X) * YARD_ONE_GLIDE_SLOPE;
+    const glide = floats[0];
+    if (glide && glide.anchorY !== null) {
+      glide.y = clamp(glideY(glide.x) + rng.range(-10, 10), 300, glide.anchorY - 70);
+    }
+    const climb = floats[1];
+    // High enough that a glide passes under it, low enough for one good hold.
+    if (climb) climb.y = glideY(climb.x) - rng.range(110, 140);
     balloons.push({
-      id: 's-extra',
-      x: FIRST_STACK_X - rng.range(80, 140),
-      y: GROUND_Y - rng.range(210, 280),
+      id: 's-dive',
+      x: lastStackEnd + rng.range(100, 130),
+      y: GROUND_Y - rng.range(100, 118),
       color: rng.pick(BALLOON.colors),
-      anchorY: GROUND_Y - 40,
+      anchorY: GROUND_Y - 24,
     });
   }
 

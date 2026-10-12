@@ -44,7 +44,14 @@ export const PHYSICS = {
   tapLift: 2.2,
   tapLiftSteps: 6,
   glideAngle: 0.19,
-  diveAngle: 0.58,
+  /** Nose-down a dive asks for, about 54 degrees. Steep enough to reach low balloons. */
+  diveAngle: 0.95,
+  /** Radians per step a dive turns the nose down. */
+  diveTurnRate: 0.075,
+  /** Steps the nose stays down after the finger lets go of a dive. */
+  diveCarrySteps: 15,
+  /** The steepest a hands-off dart will point down when it is slow. */
+  trimMaxDive: 0.58,
   /** Radians of path change per step while the finger is held (before speed scaling). */
   climbTurnRate: 0.11,
   /** Extra upward kick each step while climbing, on top of pointing the nose up. */
@@ -72,7 +79,7 @@ export const PHYSICS = {
   trimMaxClimb: -0.42,
   /** World y the dart is steered back under, so it never leaves the top of the screen. */
   ceilingY: 70,
-  powerDiveAngle: 0.88,
+  powerDiveAngle: 1.15,
   /** Radians of flight-path change per step at the reference speed. */
   turnRate: 0.028,
   turnRefSpeed: 13,
