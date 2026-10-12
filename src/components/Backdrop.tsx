@@ -8,7 +8,69 @@ import { Layout } from '../game/layout';
 import { createRng } from '../game/rng';
 import { YardTheme } from '../game/yardTheme';
 import { FILL, NO_TOUCH } from './fill';
-import { PaperGrain } from './PaperGrain';
+
+/**
+ * A puffy cloud built from round lobes over a flat base, crisp at any screen
+ * density. The group fades as one so the overlaps do not show darker.
+ */
+function PuffyCloud({
+  left,
+  top,
+  width,
+  height,
+  color,
+  opacity,
+}: {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  color: string;
+  opacity: number;
+}) {
+  const lobes = [
+    { x: 0.08, d: 1.25 },
+    { x: 0.3, d: 1.9 },
+    { x: 0.56, d: 1.55 },
+    { x: 0.74, d: 1.15 },
+  ];
+  const boxH = height * 2;
+  return (
+    <View
+      needsOffscreenAlphaCompositing
+      style={{ position: 'absolute', left, top: top - height, width, height: boxH, opacity }}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height,
+          borderRadius: height / 2,
+          backgroundColor: color,
+        }}
+      />
+      {lobes.map((lobe, i) => {
+        const d = Math.min(boxH, height * lobe.d);
+        return (
+          <View
+            key={i}
+            style={{
+              position: 'absolute',
+              left: width * lobe.x,
+              bottom: height * 0.18,
+              width: d,
+              height: d,
+              borderRadius: d / 2,
+              backgroundColor: color,
+            }}
+          />
+        );
+      })}
+    </View>
+  );
+}
 
 /** A run of garden fence panels that scrolls slower than the yard itself. */
 function FenceLine({
@@ -162,9 +224,10 @@ export const Backdrop = React.memo(function Backdrop({
     return Array.from({ length: theme.cloudCount }, (_, i) => ({
       key: `cloud-${i}`,
       x: rng.range(0, tileWidth),
-      y: rng.range(skyHeight * 0.05, skyHeight * 0.52),
-      width: rng.range(70, 210),
-      height: rng.range(12, 28),
+      // Keep clear of the title and score along the top of the screen.
+      y: rng.range(skyHeight * 0.24, skyHeight * 0.56),
+      width: rng.range(90, 220),
+      height: rng.range(16, 30),
       opacity: rng.range(theme.cloudMin, theme.cloudMax),
     }));
   }, [seed, skyHeight, theme.cloudCount, theme.cloudMax, theme.cloudMin, theme.id, tileWidth]);
@@ -213,6 +276,21 @@ export const Backdrop = React.memo(function Backdrop({
       ))}
 
       {showDisc ? (
+        // A soft halo first, then the disc, so the light reads as light.
+        <View
+          style={{
+            position: 'absolute',
+            left: layout.width * (theme.moon ? 0.74 : 0.64) - sunSize * 0.35,
+            bottom: groundBottom - sunSize * (theme.moon ? 0.08 : 0.34) - sunSize * 0.35,
+            width: sunSize * 1.7,
+            height: sunSize * 1.7,
+            borderRadius: sunSize * 0.85,
+            backgroundColor: theme.sun,
+            opacity: (theme.moon ? 0.78 : theme.sunOpacity) * 0.18,
+          }}
+        />
+      ) : null}
+      {showDisc ? (
         <View
           style={{
             position: 'absolute',
@@ -239,18 +317,14 @@ export const Backdrop = React.memo(function Backdrop({
             }}
           >
             {clouds.map((cloud) => (
-              <View
+              <PuffyCloud
                 key={cloud.key}
-                style={{
-                  position: 'absolute',
-                  left: cloud.x,
-                  top: cloud.y,
-                  width: cloud.width,
-                  height: cloud.height,
-                  borderRadius: cloud.height,
-                  backgroundColor: theme.cloud,
-                  opacity: cloud.opacity,
-                }}
+                left={cloud.x}
+                top={cloud.y}
+                width={cloud.width}
+                height={cloud.height}
+                color={theme.cloud}
+                opacity={cloud.opacity}
               />
             ))}
           </View>
@@ -284,7 +358,8 @@ export const Backdrop = React.memo(function Backdrop({
         color={theme.fence}
         postColor={theme.fenceDark}
       />
-      <PaperGrain />
+      {/* No paper grain over the yard: the tiled texture upscales on sharp
+          screens and made the whole scene look soft. Menus keep it. */}
     </View>
   );
 });

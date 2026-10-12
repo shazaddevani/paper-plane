@@ -17,6 +17,8 @@ const { Bodies, Body, Composite, Constraint, Engine, Events, Vector } = Matter;
 
 /** How long a smashed box or popped balloon takes to burst before it is gone. */
 const BURST_MS = 170;
+/** A balloon pop gets longer so its burst and falling string can be seen. */
+const BALLOON_BURST_MS = 320;
 /** Debris fades over its last stretch instead of blinking out. */
 const DEBRIS_FADE_MS = 320;
 /** Helium: how hard a balloon pulls up, as a fraction of gravity. */
@@ -1194,12 +1196,13 @@ export class GameWorld {
       if (meta.dead) {
         // Debris just goes; smashed boxes and popped balloons burst first.
         const since = meta.diedAt === undefined ? Infinity : this.clock - meta.diedAt;
-        if (slot.kind === 'debris' || since >= BURST_MS) {
+        const burstMs = slot.kind === 'balloon' ? BALLOON_BURST_MS : BURST_MS;
+        if (slot.kind === 'debris' || since >= burstMs) {
           frame[base + 3] = 0;
           continue;
         }
         // Just under 1 tells the view it is bursting.
-        opacity = Math.min(0.99, 1 - since / BURST_MS);
+        opacity = Math.min(0.99, 1 - since / burstMs);
       } else if (slot.kind === 'debris' && meta.expiresAt !== undefined) {
         opacity = Math.max(0, Math.min(1, (meta.expiresAt - this.clock) / DEBRIS_FADE_MS));
       }

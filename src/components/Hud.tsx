@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,6 +51,12 @@ export function Hud({
 
   return (
     <>
+      {/* A soft shade behind the top bar so white text reads on any sky. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(8, 12, 20, 0.38)', 'rgba(8, 12, 20, 0)']}
+        style={[styles.topScrim, { height: 96 + insets.top }]}
+      />
       <View
         pointerEvents="box-none"
         style={[styles.topChrome, padH, { paddingTop: 14 + insets.top }]}
@@ -150,6 +157,14 @@ export function Hud({
 }
 
 const styles = StyleSheet.create({
+  topScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 3,
+    pointerEvents: 'none',
+  },
   topChrome: {
     position: 'absolute',
     top: 0,

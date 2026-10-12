@@ -26,99 +26,23 @@ const TREES = {
   near: 'rgba(28, 45, 33, 0.9)',
 };
 
+/**
+ * One sky per yard, so every new yard looks like a new place. The lawn stays
+ * green in all of them; the sky, light and trees carry the change.
+ */
 export const YARD_THEMES: YardTheme[] = [
   {
-    id: 'sunset',
-    sky: ['#1B2645', '#3A4574', '#7C5A82', '#D97E58', '#F2B472'],
-    sun: '#FFD79A',
-    sunOpacity: 0.45,
-    moon: false,
-    stars: false,
-    cloud: '#FFF3E0',
-    cloudMin: 0.12,
-    cloudMax: 0.34,
-    cloudCount: 7,
-    treeFar: TREES.far,
-    treeNear: TREES.near,
-    fence: '#7A5A3A',
-    fenceDark: '#4E3A24',
-    grass: '#355A32',
-    grassEdge: '#6A8F4A',
-  },
-  {
-    id: 'golden',
-    sky: ['#243050', '#4A4A78', '#A06070', '#E88858', '#F8C888'],
-    sun: '#FFE0A8',
-    sunOpacity: 0.52,
-    moon: false,
-    stars: false,
-    cloud: '#FFE8D0',
-    cloudMin: 0.14,
-    cloudMax: 0.36,
-    cloudCount: 6,
-    treeFar: TREES.far,
-    treeNear: TREES.near,
-    fence: '#7A5A3A',
-    fenceDark: '#4E3A24',
-    grass: '#355A32',
-    grassEdge: '#6A8F4A',
-  },
-  {
-    id: 'dusk',
-    sky: ['#1A2044', '#3A3868', '#6A4A78', '#C07068', '#E8A878'],
-    sun: '#F4C890',
-    sunOpacity: 0.32,
-    moon: false,
-    stars: true,
-    cloud: '#F0D8C8',
-    cloudMin: 0.1,
-    cloudMax: 0.28,
-    cloudCount: 5,
-    treeFar: 'rgba(32, 48, 40, 0.78)',
-    treeNear: 'rgba(22, 36, 28, 0.94)',
-    fence: '#6A4E32',
-    fenceDark: '#3E2E1C',
-    grass: '#2E4E2C',
-    grassEdge: '#5A7A42',
-  },
-  {
-    id: 'evening',
-    sky: ['#141A38', '#2A3060', '#4A3A70', '#8A5878', '#C88870'],
-    sun: '#F4EFE4',
-    sunOpacity: 0.55,
-    moon: true,
-    stars: true,
-    cloud: '#D8D0C8',
-    cloudMin: 0.1,
-    cloudMax: 0.24,
-    cloudCount: 4,
-    treeFar: 'rgba(24, 40, 32, 0.82)',
-    treeNear: 'rgba(16, 28, 22, 0.95)',
-    fence: '#5A422C',
-    fenceDark: '#322414',
-    grass: '#243C28',
-    grassEdge: '#4A6840',
-  },
-];
-
-/** Yard 1 is always the original sunset. Later yards in the sitting go later. */
-export function pickYardTheme(stage: number): YardTheme {
-  const index = Math.max(0, stage - 1) % YARD_THEMES.length;
-  return YARD_THEMES[index];
-}
-
-const GREEN_LAWNS: YardTheme[] = [
-  {
-    id: 'sunset',
+    // Yard 1: the green meadow players already know.
+    id: 'meadow',
     sky: ['#145C32', '#2E8A42', '#6BB85A', '#B6DE86', '#E5F3C4'],
     sun: '#F6F3C4',
     sunOpacity: 0.7,
     moon: false,
     stars: false,
     cloud: '#F4FBEA',
-    cloudMin: 0.28,
-    cloudMax: 0.5,
-    cloudCount: 7,
+    cloudMin: 0.4,
+    cloudMax: 0.62,
+    cloudCount: 6,
     treeFar: 'rgba(46, 110, 58, 0.78)',
     treeNear: 'rgba(28, 82, 40, 0.92)',
     fence: '#6E8F48',
@@ -127,78 +51,99 @@ const GREEN_LAWNS: YardTheme[] = [
     grassEdge: '#8ED45A',
   },
   {
-    id: 'golden',
-    sky: ['#124E2C', '#287A3C', '#5AAA50', '#A6D47A', '#D8EEC0'],
-    sun: '#F4F0B8',
-    sunOpacity: 0.62,
+    id: 'morning',
+    sky: ['#2F6FC0', '#4B8FD8', '#78B2E8', '#AED4F2', '#E2F1FB'],
+    sun: '#FFF6D6',
+    sunOpacity: 0.85,
     moon: false,
     stars: false,
-    cloud: '#F2F8E6',
-    cloudMin: 0.24,
-    cloudMax: 0.46,
+    cloud: '#FFFFFF',
+    cloudMin: 0.75,
+    cloudMax: 0.95,
     cloudCount: 6,
-    treeFar: 'rgba(46, 110, 58, 0.78)',
-    treeNear: 'rgba(28, 82, 40, 0.92)',
-    fence: '#648848',
-    fenceDark: '#3A6230',
-    grass: '#2A7A34',
-    grassEdge: '#7EC850',
+    treeFar: 'rgba(56, 120, 78, 0.8)',
+    treeNear: 'rgba(34, 92, 52, 0.94)',
+    fence: '#B98A5A',
+    fenceDark: '#7E5A36',
+    grass: '#3A9A44',
+    grassEdge: '#9EDC64',
   },
   {
-    id: 'dusk',
-    sky: ['#0E4226', '#1F6434', '#3E8A44', '#7AAA60', '#C4E0A0'],
-    sun: '#E6F0C0',
-    sunOpacity: 0.4,
+    id: 'golden',
+    sky: ['#3E78B8', '#7FA8C8', '#E6C48A', '#F4A65A', '#FBD992'],
+    sun: '#FFE7A8',
+    sunOpacity: 0.85,
     moon: false,
     stars: false,
-    cloud: '#E4F0D4',
-    cloudMin: 0.18,
-    cloudMax: 0.36,
+    cloud: '#FFF2DC',
+    cloudMin: 0.6,
+    cloudMax: 0.85,
     cloudCount: 5,
-    treeFar: 'rgba(32, 88, 44, 0.84)',
-    treeNear: 'rgba(20, 64, 30, 0.94)',
-    fence: '#567A40',
-    fenceDark: '#2E5230',
-    grass: '#246C30',
-    grassEdge: '#6EB248',
+    treeFar: 'rgba(70, 96, 52, 0.82)',
+    treeNear: 'rgba(44, 70, 34, 0.94)',
+    fence: '#A87444',
+    fenceDark: '#6E4626',
+    grass: '#3C8A36',
+    grassEdge: '#A8D25A',
   },
   {
-    id: 'evening',
-    sky: ['#0C3420', '#184828', '#2E6A38', '#5A8A48', '#98C070'],
-    sun: '#E4F0C8',
+    id: 'sunset',
+    sky: ['#2A2C5E', '#5E4182', '#B65A86', '#F07A62', '#FFC07A'],
+    sun: '#FFD79A',
+    sunOpacity: 0.8,
+    moon: false,
+    stars: false,
+    cloud: '#FFD2C2',
+    cloudMin: 0.45,
+    cloudMax: 0.7,
+    cloudCount: 5,
+    treeFar: 'rgba(48, 44, 60, 0.82)',
+    treeNear: 'rgba(30, 36, 34, 0.94)',
+    fence: '#7A5A3A',
+    fenceDark: '#4E3A24',
+    grass: '#2E7434',
+    grassEdge: '#7CB84E',
+  },
+  {
+    id: 'twilight',
+    sky: ['#121A3E', '#26306A', '#4A3E86', '#8A5A9A', '#D08AA0'],
+    sun: '#F4C8D0',
     sunOpacity: 0.35,
     moon: false,
-    stars: false,
-    cloud: '#D8E8C8',
-    cloudMin: 0.14,
-    cloudMax: 0.3,
+    stars: true,
+    cloud: '#C8B8E0',
+    cloudMin: 0.25,
+    cloudMax: 0.45,
     cloudCount: 4,
-    treeFar: 'rgba(20, 64, 34, 0.88)',
-    treeNear: 'rgba(12, 44, 24, 0.96)',
-    fence: '#4A6A38',
-    fenceDark: '#243C22',
-    grass: '#1C5C28',
-    grassEdge: '#5A9A40',
+    treeFar: 'rgba(30, 32, 58, 0.86)',
+    treeNear: 'rgba(18, 24, 34, 0.95)',
+    fence: '#5A4630',
+    fenceDark: '#32261A',
+    grass: '#24603A',
+    grassEdge: '#5E9E4E',
+  },
+  {
+    id: 'night',
+    sky: ['#060A1E', '#0E1638', '#18245A', '#24346E', '#36507E'],
+    sun: '#F4EFE4',
+    sunOpacity: 0.9,
+    moon: true,
+    stars: true,
+    cloud: '#8A96B8',
+    cloudMin: 0.18,
+    cloudMax: 0.32,
+    cloudCount: 4,
+    treeFar: 'rgba(14, 22, 40, 0.88)',
+    treeNear: 'rgba(8, 14, 24, 0.96)',
+    fence: '#40382E',
+    fenceDark: '#241E18',
+    grass: '#1E5432',
+    grassEdge: '#4E8E50',
   },
 ];
 
-GREEN_LAWNS.forEach((lawn, index) => {
-  const theme = YARD_THEMES[index];
-  if (!theme) return;
-  theme.id = lawn.id;
-  theme.sky = lawn.sky;
-  theme.sun = lawn.sun;
-  theme.sunOpacity = lawn.sunOpacity;
-  theme.moon = lawn.moon;
-  theme.stars = lawn.stars;
-  theme.cloud = lawn.cloud;
-  theme.cloudMin = lawn.cloudMin;
-  theme.cloudMax = lawn.cloudMax;
-  theme.cloudCount = lawn.cloudCount;
-  theme.treeFar = lawn.treeFar;
-  theme.treeNear = lawn.treeNear;
-  theme.fence = lawn.fence;
-  theme.fenceDark = lawn.fenceDark;
-  theme.grass = lawn.grass;
-  theme.grassEdge = lawn.grassEdge;
-});
+/** A different sky for each yard in the sitting, cycling after the last. */
+export function pickYardTheme(stage: number): YardTheme {
+  const index = Math.max(0, stage - 1) % YARD_THEMES.length;
+  return YARD_THEMES[index];
+}

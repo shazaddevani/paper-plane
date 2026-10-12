@@ -108,6 +108,49 @@ export const BlockBody = React.memo(function BlockBody({
   );
 });
 
+const POP_RAYS = [0, 1, 2, 3, 4, 5, 6, 7];
+
+/** One spark line of a pop, flying out from the middle as the burst goes on. */
+function PopRay({
+  angle,
+  radius,
+  color,
+  frame,
+  index,
+}: {
+  angle: number;
+  radius: number;
+  color: string;
+  frame: SharedValue<number[]>;
+  index: number;
+}) {
+  const style = useAnimatedStyle(() => {
+    const base = index * STRIDE;
+    const buffer = frame.value;
+    const opacity = buffer.length > base + 3 ? buffer[base + 3] : 1;
+    if (!(opacity > 0 && opacity < 1)) return { opacity: 0 };
+    const t = 1 - opacity;
+    const reach = radius * (0.9 + t * 1.5);
+    return {
+      opacity: Math.max(0, 1 - t * 1.25),
+      transform: [
+        { rotate: `${angle}rad` },
+        { translateX: reach },
+        { scaleX: 1 - t * 0.6 },
+      ],
+    };
+  });
+  return (
+    <Animated.View
+      style={[
+        styles.popRay,
+        { left: radius - radius * 0.22, top: radius - 1.5, width: radius * 0.44, backgroundColor: color },
+        style,
+      ]}
+    />
+  );
+}
+
 export const BalloonBody = React.memo(function BalloonBody({
   slot,
   frame,
@@ -121,30 +164,53 @@ export const BalloonBody = React.memo(function BalloonBody({
   // starts at the knot, so it is shorter by one radius and actually meets the stack.
   const drop = Math.max(0, (slot.stringLength ?? 0) - slot.w / 2) * scale;
 
-  // The physics leans the balloon so its string points at the tie, and swells
-  // it for a moment when it pops.
+  // The physics leans the balloon so its string points at the tie. While it
+  // pops, the container stays put and the pieces below animate themselves.
   const animated = useAnimatedStyle(() => {
     const base = index * STRIDE;
     const buffer = frame.value;
     if (buffer.length <= base + 4) return { opacity: 0 };
-    const opacity = buffer[base + 3];
-    const bursting = opacity > 0 && opacity < 1;
     return {
-      opacity,
+      opacity: buffer[base + 3] > 0 ? 1 : 0,
       transform: [
         { translateX: buffer[base] * scale },
         { translateY: buffer[base + 1] * scale },
         { rotate: `${buffer[base + 2]}rad` },
-        { scale: bursting ? 1 + (1 - opacity) * 0.7 : 1 },
       ],
     };
   });
 
+  // The rubber: swells a touch and is gone in the first third of the pop.
+  const rubber = useAnimatedStyle(() => {
+    const base = index * STRIDE;
+    const buffer = frame.value;
+    const opacity = buffer.length > base + 3 ? buffer[base + 3] : 1;
+    if (opacity >= 1) return { opacity: 1, transform: [{ scale: 1 }] };
+    const t = 1 - opacity;
+    return {
+      opacity: Math.max(0, 1 - t / 0.3),
+      transform: [{ scale: 1 + Math.min(t, 0.3) * 0.9 }],
+    };
+  });
+
+  // A bright ring that rushes out from the pop.
+  const ring = useAnimatedStyle(() => {
+    const base = index * STRIDE;
+    const buffer = frame.value;
+    const opacity = buffer.length > base + 3 ? buffer[base + 3] : 1;
+    if (!(opacity > 0 && opacity < 1)) return { opacity: 0 };
+    const t = 1 - opacity;
+    return { opacity: (1 - t) * 0.9, transform: [{ scale: 0.8 + t * 1.8 }] };
+  });
+
+  // The string is let go: it drops and fades instead of vanishing with the balloon.
   const cord = useAnimatedStyle(() => {
     const base = index * STRIDE;
     const buffer = frame.value;
-    if (buffer.length <= base + 4) return { opacity: 0 };
-    return { opacity: buffer[base + 3] >= 1 ? 1 : 0 };
+    const opacity = buffer.length > base + 3 ? buffer[base + 3] : 1;
+    if (opacity >= 1) return { opacity: 1, transform: [{ translateY: 0 }] };
+    const t = 1 - opacity;
+    return { opacity: Math.max(0, 1 - t * 1.1), transform: [{ translateY: t * t * radius * 3 }] };
   });
 
   return (
@@ -160,14 +226,40 @@ export const BalloonBody = React.memo(function BalloonBody({
           <BalloonString drop={drop} center={radius} />
         </Animated.View>
       ) : null}
-      <View
+      <Animated.View style={[styles.balloonWrap, rubber]}>
+        <View
+          style={[
+            styles.balloon,
+            { backgroundColor: color, width: diameter, height: diameter, borderRadius: radius },
+          ]}
+        />
+        {/* Shade the lower side so it reads as a round balloon, not a flat disc. */}
+        <View
+          style={[
+            styles.balloonShade,
+            { width: diameter, height: diameter, borderRadius: radius },
+          ]}
+        />
+        <View style={[styles.knot, { backgroundColor: color, left: radius - 4, top: diameter - 5 }]} />
+        <View style={[styles.balloonShine, { borderRadius: radius }]} />
+      </Animated.View>
+      <Animated.View
         style={[
-          styles.balloon,
-          { backgroundColor: color, width: diameter, height: diameter, borderRadius: radius },
+          styles.popRing,
+          { width: diameter, height: diameter, borderRadius: radius, borderColor: color },
+          ring,
         ]}
       />
-      <View style={[styles.knot, { backgroundColor: color, left: radius - 4, top: diameter - 5 }]} />
-      <View style={[styles.balloonShine, { borderRadius: radius }]} />
+      {POP_RAYS.map((n) => (
+        <PopRay
+          key={n}
+          angle={(n / POP_RAYS.length) * Math.PI * 2}
+          radius={radius}
+          color={color}
+          frame={frame}
+          index={index}
+        />
+      ))}
     </Animated.View>
   );
 });
@@ -336,13 +428,6 @@ export const PlaneBody = React.memo(function PlaneBody({
     };
   });
 
-  const flutter = useAnimatedStyle(() => {
-    // A gentle ripple. A big flap made the whole dart look shaky.
-    const flap = Math.sin(clock.value * 0.011);
-    return {
-      transform: [{ translateY: flap * span * 0.16 }, { rotate: `${flap * 0.07}rad` }],
-    };
-  });
 
   const tailRoom = length * 0.8;
 
@@ -369,9 +454,8 @@ export const PlaneBody = React.memo(function PlaneBody({
           ]}
         />
         <Animated.View style={live}>
-          <Animated.View style={[{ position: 'absolute', left: 0, top: 0 }, flutter]}>
-            <StreamerTail streamer={streamer} length={length} />
-          </Animated.View>
+          {/* Pinned at the tail; the ribbon animates its own wave. */}
+          <StreamerTail streamer={streamer} length={length} clock={clock} />
           <PaperDart paper={skin} length={length} />
         </Animated.View>
         <Animated.View style={[{ position: 'absolute', left: 0, top: 0 }, wad]}>
@@ -448,6 +532,29 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
+  },
+  balloonWrap: {
+    ...FILL,
+    overflow: 'visible',
+  },
+  balloonShade: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    borderBottomWidth: 6,
+    borderRightWidth: 3,
+    borderColor: 'rgba(0, 0, 0, 0.16)',
+  },
+  popRing: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    borderWidth: 3,
+  },
+  popRay: {
+    position: 'absolute',
+    height: 3,
+    borderRadius: 2,
   },
   balloonShine: {
     position: 'absolute',
