@@ -33,9 +33,12 @@ export const PHYSICS = {
    */
   climbAngle: -0.62,
   /** Nose-up a quick tap asks for. The climb steepens to climbAngle as the hold goes on. */
-  climbStartAngle: -0.06,
+  climbStartAngle: -0.2,
   /** Steps of holding to build from the gentle start to the full climb. */
-  climbBuildSteps: 46,
+  climbBuildSteps: 34,
+  /** Upward speed a press adds straight away, spread over tapLiftSteps. */
+  tapLift: 2.2,
+  tapLiftSteps: 6,
   glideAngle: 0.19,
   diveAngle: 0.58,
   /** Radians of path change per step while the finger is held (before speed scaling). */

@@ -815,6 +815,11 @@ export class GameWorld {
     if (holding && !this.looping) {
       const build = Math.min(1, this.holdSteps / PHYSICS.climbBuildSteps);
       vy -= PHYSICS.climbLift * this.climbScale * airflow * build;
+      // The moment a finger goes down the dart answers with a small lift,
+      // spread over a few steps so it rises rather than jolts.
+      if (this.holdSteps <= PHYSICS.tapLiftSteps) {
+        vy -= (PHYSICS.tapLift / PHYSICS.tapLiftSteps) * this.climbScale;
+      }
     }
 
     if (this.looping) {
