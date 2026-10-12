@@ -38,7 +38,15 @@ import {
 
 type Route =
   | { name: 'home' }
-  | { name: 'game'; mode: 'daily' | 'practice'; seed: number; dayKey: string; runKey: number }
+  | {
+      name: 'game';
+      mode: 'daily' | 'practice';
+      seed: number;
+      dayKey: string;
+      runKey: number;
+      /** First run ever: coach the moves in Yard 1. */
+      coach?: boolean;
+    }
   | { name: 'results'; summary: RunSummary; application: RunApplication }
   | { name: 'shed' }
   | { name: 'stickers' }
@@ -86,8 +94,18 @@ function Root() {
     loadProfile().then((loaded) => {
       if (!active) return;
       setProfile(loaded);
-      // First time in: show how to throw before anything else.
-      if (!loaded.seenHowTo) setRoute({ name: 'howto', firstTime: true });
+      // First time in: straight into Yard 1, with the moves coached in play.
+      if (!loaded.seenHowTo) {
+        const day = todayKey();
+        setRoute({
+          name: 'game',
+          mode: 'daily',
+          seed: dailySeed(day),
+          dayKey: day,
+          runKey: Date.now(),
+          coach: true,
+        });
+      }
     });
     return () => {
       active = false;
@@ -126,7 +144,8 @@ function Root() {
   const handleFinish = useCallback((summary: RunSummary) => {
     setProfile((current) => {
       if (!current) return current;
-      const application = applyRun(current, summary);
+      // Having played a run, the player has been through the coached yard.
+      const application = applyRun({ ...current, seenHowTo: true }, summary);
       void saveProfile(application.profile);
       setRoute({ name: 'results', summary, application });
       return application.profile;
@@ -208,6 +227,7 @@ function Root() {
         <GameScreen
           key={route.runKey}
           mode={route.mode}
+          coach={route.coach}
           seed={route.seed}
           dayKey={route.dayKey}
           profile={profile}

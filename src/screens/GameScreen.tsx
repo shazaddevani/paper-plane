@@ -4,6 +4,7 @@ import { PanResponder, Platform, StyleSheet, Text, View, useWindowDimensions } f
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { Backdrop } from '../components/Backdrop';
+import { CoachPrompt } from '../components/CoachPrompt';
 import { YardLaunch } from '../components/YardLaunch';
 import { FILL } from '../components/fill';
 import { Hud } from '../components/Hud';
@@ -40,7 +41,32 @@ export type GameStats = {
   powerName: string;
   phase: Phase;
   stage: number;
+  /** First-time coaching line, or null once there is nothing left to teach. */
+  coach: string | null;
 };
+
+type Learned = { climb: boolean; dive: boolean };
+
+/** What a first-time player should try next, in the order Yard 1 asks for it. */
+function coachLine(
+  enabled: boolean,
+  stage: number,
+  phase: Phase,
+  throwsUsed: number,
+  learned: Learned,
+): string | null {
+  if (!enabled || stage > 1) return null;
+  if (phase === 'ready') {
+    if (throwsUsed === 0) return 'Tap anywhere to throw';
+    if (!learned.climb) return 'Tap to throw, then hold to climb';
+    if (!learned.dive) return 'Tap to throw, then drag down to dive';
+    return null;
+  }
+  if (phase !== 'flight' || throwsUsed < 2) return null;
+  if (!learned.climb) return 'Hold your finger down to climb';
+  if (!learned.dive) return 'Press and drag down to dive';
+  return null;
+}
 
 type SessionTotals = {
   yardsCleared: number;
@@ -59,9 +85,12 @@ export function GameScreen({
   dayKey,
   profile,
   onExit: _onExit,
+  coach = false,
   onFinish,
 }: {
   mode: 'daily' | 'practice';
+  /** First run ever: show the coaching prompts. */
+  coach?: boolean;
   seed: number;
   dayKey: string;
   profile: Profile;
@@ -88,7 +117,8 @@ export function GameScreen({
   const tune = useMemo(() => mergeFlight(paper, upgrade), [paper, upgrade]);
   const yardTheme = useMemo(() => pickYardTheme(stage), [stage]);
 
-  const totalThrows = level.throws + tune.extraThrows;
+  // The coached first yard gives two spare planes to learn with.
+  const totalThrows = level.throws + tune.extraThrows + (coach && stage === 1 ? 2 : 0);
   const balloonsTotal = level.balloons.length;
 
   const frame = useSharedValue<number[]>([]);
@@ -107,6 +137,7 @@ export function GameScreen({
   const holdingRef = useRef(false);
   const divingRef = useRef(false);
   const holdStartRef = useRef(0);
+  const learnedRef = useRef<Learned>({ climb: false, dive: false });
   const wasLoopingRef = useRef(false);
   const leadRef = useRef(0.28);
   const stageRef = useRef(stage);
@@ -168,6 +199,7 @@ export function GameScreen({
     powerName: paper.power.name,
     phase: 'ready',
     stage: 1,
+    coach: coachLine(coach, 1, 'ready', 0, { climb: false, dive: false }),
   });
 
   const statsDirty = useRef(true);
@@ -198,6 +230,7 @@ export function GameScreen({
       powerName: paper.power.name,
       phase: phaseRef.current,
       stage: stageRef.current,
+      coach: coachLine(coach, stageRef.current, phaseRef.current, run.throwsUsed, learnedRef.current),
     };
     setStats((prev) =>
       prev.score === next.score &&
@@ -210,12 +243,13 @@ export function GameScreen({
       prev.looping === next.looping &&
       prev.powerDiving === next.powerDiving &&
       prev.phase === next.phase &&
-      prev.stage === next.stage
+      prev.stage === next.stage &&
+      prev.coach === next.coach
         ? prev
         : next,
     );
     statsDirty.current = false;
-  }, [paper.power.name]);
+  }, [coach, paper.power.name]);
 
   const foldCurrentYard = useCallback(() => {
     const session = sessionRef.current;
@@ -430,6 +464,20 @@ export function GameScreen({
       }
       wasLoopingRef.current = world.isLooping;
 
+      // A hold that has properly climbed counts as learning to climb.
+      if (
+        coach &&
+        !learnedRef.current.climb &&
+        phaseRef.current === 'flight' &&
+        holdingRef.current &&
+        !divingRef.current &&
+        holdStartRef.current > 0 &&
+        now - holdStartRef.current > 300
+      ) {
+        learnedRef.current.climb = true;
+        statsDirty.current = true;
+      }
+
       const alpha = accumulator / PHYSICS.fixedStep;
       const built = world.buildFrame(alpha);
       const planePose = built.slice(world.planeFrameOffset, world.planeFrameOffset + STRIDE);
@@ -600,7 +648,10 @@ export function GameScreen({
     // in practice; the old 110px asked for a third of the screen.
     const pullingDown = divingRef.current ? dy > 30 : dy > 52;
     if (pullingDown === divingRef.current) return;
-    if (pullingDown) holdStartRef.current = 0;
+    if (pullingDown) {
+      holdStartRef.current = 0;
+      learnedRef.current.dive = true;
+    }
     else if (holdingRef.current) holdStartRef.current = performance.now();
     divingRef.current = pullingDown;
     statsDirty.current = true;
@@ -711,6 +762,9 @@ export function GameScreen({
           mode={mode}
           onExit={leaveYard}
         />
+      )}
+      {stats.phase === 'cleared' || stats.phase === 'done' ? null : (
+        <CoachPrompt text={stats.coach} />
       )}
       <YardLaunch key={stage} stage={stage} title={level.title} />
     </View>
