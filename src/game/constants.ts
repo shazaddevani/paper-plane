@@ -31,7 +31,11 @@ export const PHYSICS = {
    * aerodynamic forces. Hold lifts the nose; pull down to dive. Gravity still
    * runs the economy: climb spends speed, a dive pays it back.
    */
-  climbAngle: -0.5,
+  climbAngle: -0.62,
+  /** Nose-up a quick tap asks for. The climb steepens to climbAngle as the hold goes on. */
+  climbStartAngle: -0.06,
+  /** Steps of holding to build from the gentle start to the full climb. */
+  climbBuildSteps: 46,
   glideAngle: 0.19,
   diveAngle: 0.58,
   /** Radians of path change per step while the finger is held (before speed scaling). */

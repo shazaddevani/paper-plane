@@ -175,6 +175,7 @@ export class GameWorld {
   private roll = 1;
   private loopStartFacing: 1 | -1 = 1;
   private loopSteps = 0;
+  private holdSteps = 0;
   private loopRadius: number = PHYSICS.loopMaxRadius;
   private prevRoll = 1;
   private grounded = false;
@@ -710,6 +711,9 @@ export class GameWorld {
     const holding = pressed && !this.didLoopThisHold;
     const wantLoop = Boolean(input.loop) && holding;
 
+    // How long this press has been held, so the climb can build with it.
+    this.holdSteps = pressed ? this.holdSteps + 1 : 0;
+
     if (!pressed) {
       this.looping = false;
       this.didLoopThisHold = false;
@@ -736,7 +740,7 @@ export class GameWorld {
 
     const flightPath = Math.atan2(velocity.y, velocity.x);
     // 0 at the stall speed, 1 once there is real airspeed over the wing.
-    const airflow = Math.max(0, Math.min(1, (speed - PHYSICS.stallSpeed) / 2.5));
+    const airflow = Math.max(0, Math.min(1, (speed - PHYSICS.stallSpeed) / 1.5));
 
     let commanded = 0;
     let rate: number = PHYSICS.turnRate;
@@ -767,8 +771,12 @@ export class GameWorld {
         commanded = headingCommand(this.facing, PHYSICS.diveAngle * this.diveScale);
         rate = PHYSICS.turnRate * Math.max(0.7, this.diveScale);
       } else if (holding) {
-        // Near stall the wing stops answering and the nose falls through.
-        const climb = PHYSICS.climbAngle * airflow + trim * (1 - airflow);
+        // A tap lifts the nose a little; the longer the hold, the steeper the
+        // climb, until it rolls into the loop. Near stall the wing stops
+        // answering and the nose falls through.
+        const build = Math.min(1, this.holdSteps / PHYSICS.climbBuildSteps);
+        const wanted = PHYSICS.climbStartAngle + (PHYSICS.climbAngle - PHYSICS.climbStartAngle) * build;
+        const climb = Math.min(trim, wanted) * airflow + trim * (1 - airflow);
         commanded = headingCommand(this.facing, climb);
         rate = PHYSICS.climbTurnRate * this.climbScale;
       } else {
@@ -804,7 +812,10 @@ export class GameWorld {
 
     let vx = Math.cos(steered) * speed;
     let vy = Math.sin(steered) * speed;
-    if (holding && !this.looping) vy -= PHYSICS.climbLift * this.climbScale * airflow;
+    if (holding && !this.looping) {
+      const build = Math.min(1, this.holdSteps / PHYSICS.climbBuildSteps);
+      vy -= PHYSICS.climbLift * this.climbScale * airflow * build;
+    }
 
     if (this.looping) {
       // Turn the facing once the dart is past straight up, but keep the loop
