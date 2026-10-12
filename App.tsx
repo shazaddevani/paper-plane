@@ -42,7 +42,7 @@ type Route =
   | { name: 'results'; summary: RunSummary; application: RunApplication }
   | { name: 'shed' }
   | { name: 'stickers' }
-  | { name: 'howto' };
+  | { name: 'howto'; firstTime?: boolean };
 
 function randomSeed(): number {
   return Math.floor(Math.random() * 0x7fffffff);
@@ -84,7 +84,10 @@ function Root() {
   useEffect(() => {
     let active = true;
     loadProfile().then((loaded) => {
-      if (active) setProfile(loaded);
+      if (!active) return;
+      setProfile(loaded);
+      // First time in: show how to throw before anything else.
+      if (!loaded.seenHowTo) setRoute({ name: 'howto', firstTime: true });
     });
     return () => {
       active = false;
@@ -94,6 +97,15 @@ function Root() {
   const commit = useCallback((next: Profile) => {
     setProfile(next);
     void saveProfile(next);
+  }, []);
+
+  const markHowToSeen = useCallback(() => {
+    setProfile((current) => {
+      if (!current || current.seenHowTo) return current;
+      const next = { ...current, seenHowTo: true };
+      void saveProfile(next);
+      return next;
+    });
   }, []);
 
   const startDaily = useCallback(() => {
@@ -228,7 +240,17 @@ function Root() {
       ) : null}
 
       {route.name === 'howto' ? (
-        <HowToScreen onBack={() => setRoute({ name: 'home' })} onPlay={startDaily} />
+        <HowToScreen
+          firstTime={route.firstTime}
+          onBack={() => {
+            markHowToSeen();
+            setRoute({ name: 'home' });
+          }}
+          onPlay={() => {
+            markHowToSeen();
+            startDaily();
+          }}
+        />
       ) : null}
     </View>
   );

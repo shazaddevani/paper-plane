@@ -8,16 +8,20 @@ import { GhostButton } from '../components/ui';
 import { BIRO, BIRO_SOFT } from '../game/constants';
 
 const MOVES = [
-  { n: '1', gesture: 'Tap', result: 'The dart glides across the yard.' },
-  { n: '2', gesture: 'Hold', result: 'The nose climbs.' },
-  { n: '3', gesture: 'Keep holding', result: 'It loops back toward you.' },
-  { n: '4', gesture: 'Pull down', result: 'It dives. A full bar makes that a power dive.' },
+  { n: '1', gesture: 'Tap', result: 'Throws the dart. Tap in the air for a little lift.' },
+  { n: '2', gesture: 'Hold', result: 'It climbs. The longer you hold, the higher it goes.' },
+  { n: '3', gesture: 'Keep holding', result: 'It loops over the top and flies back.' },
+  { n: '4', gesture: 'Pull down', result: 'It dives. When the bar is full, it is a power dive.' },
+  { n: '5', gesture: 'Let go', result: 'It glides. Out of a dive it swoops back up.' },
 ] as const;
 
 export function HowToScreen({
+  firstTime = false,
   onBack,
   onPlay,
 }: {
+  /** Opened by itself on the very first launch, rather than from the menu. */
+  firstTime?: boolean;
   onBack: () => void;
   onPlay: () => void;
 }) {
@@ -28,10 +32,10 @@ export function HowToScreen({
       <View style={[styles.page, padding]}>
         <View style={styles.header}>
           <View style={styles.heading}>
-            <Text style={styles.kicker}>One page</Text>
+            <Text style={styles.kicker}>{firstTime ? 'Welcome to Paper Plane' : 'One page'}</Text>
             <Text style={styles.title}>How to throw</Text>
           </View>
-          <GhostButton label="Back" onPress={onBack} />
+          <GhostButton label={firstTime ? 'Skip' : 'Back'} onPress={onBack} />
         </View>
 
         <View style={styles.sheetWrap}>
@@ -51,14 +55,15 @@ export function HowToScreen({
             <View style={styles.rule} />
 
             <Text style={styles.aim}>
-              Pop every balloon to finish the yard. The string hangs down to whatever it is tied
-              to. Hoops add score. The next yard is harder, and “That's enough” ends the sitting.
+              Pop every balloon to finish the yard. Knock a stack over and its balloon floats free,
+              so chase it. Fly through hoops for points. Each yard is harder than the last, and
+              “That's enough” ends the sitting.
             </Text>
           </View>
         </View>
 
         <StickyNote color={STICKY.canary} rotate={-0.4} onPress={onPlay} style={styles.play}>
-          <Text style={styles.playText}>Throw today's yards</Text>
+          <Text style={styles.playText}>{firstTime ? "Got it, let's throw" : "Throw today's yards"}</Text>
         </StickyNote>
       </View>
     </LiveCity>

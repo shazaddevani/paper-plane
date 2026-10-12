@@ -37,6 +37,8 @@ export type Profile = {
   stickers: string[];
   unlocked: string[];
   equipped: EquippedSlots;
+  /** Set once the player has been shown how to throw, so it only opens itself the first time. */
+  seenHowTo: boolean;
   totals: {
     runs: number;
     clears: number;
@@ -59,6 +61,7 @@ export const DEFAULT_PROFILE: Profile = {
   stickers: [],
   unlocked: [DEFAULT_PAPER, 'streamer-none', DEFAULT_STREAMER],
   equipped: { paper: DEFAULT_PAPER, streamer: DEFAULT_STREAMER, upgrade: null },
+  seenHowTo: false,
   totals: { runs: 0, clears: 0, balloons: 0, hoops: 0, powerDives: 0, items: 0 },
 };
 
@@ -86,6 +89,8 @@ function normalize(raw: unknown): Profile {
     stickers: stored.stickers ?? [],
     bestScoreByDay: stored.bestScoreByDay ?? {},
     equipped,
+    // Anyone who already has runs on the board knows how to throw.
+    seenHowTo: stored.seenHowTo ?? (stored.totals?.runs ?? 0) > 0,
     totals: { ...DEFAULT_PROFILE.totals, ...(stored.totals ?? {}) },
   };
 }
