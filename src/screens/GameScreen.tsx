@@ -484,6 +484,12 @@ export function GameScreen({
         }
       }
 
+      // A chain ends when the window runs out, not just at the next break.
+      if (run.combo > 1 && Date.now() - run.lastBreakAt > RUN.comboWindowMs) {
+        run.combo = 1;
+        statsDirty.current = true;
+      }
+
       if (statsDirty.current && now - lastStatsPush.current > 90) {
         lastStatsPush.current = now;
         pushStats();

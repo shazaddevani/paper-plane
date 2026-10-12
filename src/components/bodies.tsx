@@ -287,7 +287,7 @@ export const PlaneBody = React.memo(function PlaneBody({
   // Fed its own five-number frame, so it always reads from 0.
   void slot;
   // Drawn at screen size. A parent scale transform would rasterize the SVG and soften it.
-  const length = PHYSICS.planeRadius * 9.2 * scale;
+  const length = PHYSICS.planeDrawLength * scale;
   const span = dartSpan(length, skin.foldKind);
 
   const animated = useAnimatedStyle(() => {

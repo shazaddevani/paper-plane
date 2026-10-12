@@ -20,6 +20,8 @@ export const PHYSICS = {
   maxStepsPerFrame: 3,
 
   planeRadius: 14,
+  /** Drawn nose-to-tail length of the dart in world units. */
+  planeDrawLength: 92,
   planeDensity: 0.0075,
   planeAirFriction: 0.0034,
 
@@ -47,9 +49,9 @@ export const PHYSICS = {
   climbLift: 0.03,
   /** Hold this long (ms) before the dart loops over the top and flies back. */
   loopAfterMs: 800,
-  /** Loop size in world units. The dart is ~130 long, so smaller reads as a spin. */
-  loopMinRadius: 75,
-  loopMaxRadius: 130,
+  /** Loop size in world units. Much smaller than the ~92-long dart reads as a spin. */
+  loopMinRadius: 62,
+  loopMaxRadius: 115,
   /** The top of a loop stays below this world y. */
   loopTopY: 140,
   /** A loop under way keeps at least this much speed so it makes it over the top. */
@@ -234,11 +236,12 @@ export const INK: TextStyle = {
   textShadowRadius: 1.2,
 };
 
+/** Small HUD labels. Light enough to read on the green yard, with a shadow to lift them. */
 export const INK_MUTED: TextStyle = {
-  color: PALETTE.textMuted,
-  textShadowColor: 'rgba(40, 24, 18, 0.18)',
-  textShadowOffset: { width: 0, height: 0.4 },
-  textShadowRadius: 1,
+  color: 'rgba(250, 246, 236, 0.82)',
+  textShadowColor: 'rgba(12, 30, 14, 0.55)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 2,
 };
 
 /** Ballpoint on cream paper. */
