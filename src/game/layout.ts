@@ -1,8 +1,4 @@
-import { GROUND_Y } from './constants';
-
-/** High enough to keep the hoops on screen, low enough that the yard stays readable. */
-const VIEW_TOP = 70;
-const VIEW_BOTTOM = GROUND_Y + 52;
+import { WORLD_HEIGHT } from './constants';
 
 export type Layout = {
   width: number;
@@ -12,14 +8,18 @@ export type Layout = {
   visibleWidth: number;
 };
 
+/**
+ * The whole yard, sky to grass, fits the screen height, the way the released
+ * game framed it. Cropping in to the stacks made everything look zoomed and
+ * hid the top of a climb.
+ */
 export function computeLayout(width: number, height: number): Layout {
-  const band = VIEW_BOTTOM - VIEW_TOP;
-  const scale = Math.min((height - 8) / band, width / 860);
+  const scale = height / WORLD_HEIGHT;
   return {
     width,
     height,
     scale,
-    offsetY: 4 - VIEW_TOP * scale,
+    offsetY: 0,
     visibleWidth: width / scale,
   };
 }

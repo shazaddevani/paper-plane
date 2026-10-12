@@ -32,7 +32,7 @@ export const PHYSICS = {
    * runs the economy: climb spends speed, a dive pays it back.
    */
   climbAngle: -0.5,
-  glideAngle: 0.08,
+  glideAngle: 0.19,
   diveAngle: 0.58,
   /** Radians of path change per step while the finger is held (before speed scaling). */
   climbTurnRate: 0.05,
@@ -42,6 +42,20 @@ export const PHYSICS = {
   loopAfterMs: 560,
   /** Radians of path change per step during a loop-back. */
   loopTurnRate: 0.16,
+  /** A loop under way keeps at least this much speed so it makes it over the top. */
+  loopMinSpeed: 6,
+  /** Below this the wing stops flying and the nose drops. */
+  stallSpeed: 4,
+  /** Hands-off cruising speed. Faster pitches up, slower pitches down. */
+  trimSpeed: 9.4,
+  /** Radians of nose-up per unit of speed over trim. */
+  trimGain: 0.07,
+  /** How briskly a hands-off dart pulls out of a dive toward its trim. */
+  trimTurnRate: 0.06,
+  /** The steepest a hands-off dart will climb when trading speed for height. */
+  trimMaxClimb: -0.42,
+  /** World y the dart is steered back under, so it never leaves the top of the screen. */
+  ceilingY: 70,
   powerDiveAngle: 0.88,
   /** Radians of flight-path change per step at the reference speed. */
   turnRate: 0.028,
@@ -150,7 +164,7 @@ export const BALLOON = {
   friction: 0.2,
   damageThreshold: 0.25,
   score: 800,
-  colors: ['#E0605A', '#F2B33D', '#5FB6E0', '#7FC96B', '#D96FA8'],
+  colors: ['#E0605A', '#F2B33D', '#5FB6E0', '#9A6FE0', '#D96FA8'],
 } as const;
 
 export const SCORING = {

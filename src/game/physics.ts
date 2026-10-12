@@ -707,16 +707,17 @@ export class GameWorld {
 
     const velocity = plane.velocity;
     let speed = Vector.magnitude(velocity);
-    // A hold used to pitch the nose up until the dart stopped dead in the sky.
-    // Keep enough speed on the finger that a climb is still a throw.
-    if (this.looping && speed < 7) speed = 7;
-    else if (holding && speed < 6.2) speed = 6.2;
+    // Only a loop already under way gets help over the top. A plain climb pays
+    // for its height in speed and runs out, the way a paper dart does.
+    if (this.looping && speed < PHYSICS.loopMinSpeed) speed = PHYSICS.loopMinSpeed;
     if (speed < 0.4) return;
 
     const flightPath = Math.atan2(velocity.y, velocity.x);
+    // 0 at the stall speed, 1 once there is real airspeed over the wing.
+    const airflow = Math.max(0, Math.min(1, (speed - PHYSICS.stallSpeed) / 2.5));
 
     let commanded = 0;
-    let rate = PHYSICS.turnRate;
+    let rate: number = PHYSICS.turnRate;
     if (this.isPowerDiving) {
       commanded = headingCommand(this.facing, PHYSICS.powerDiveAngle);
       rate = PHYSICS.turnRate * 2.4;
@@ -725,17 +726,34 @@ export class GameWorld {
         this.powerDiveUntil = 0;
         Body.setDensity(plane, this.baseDensity);
       }
+      // Left alone, a dart trims itself: too fast and the nose comes up and
+      // trades speed for height, too slow and it drops to pick speed back up.
+      const trim = Math.max(
+        PHYSICS.trimMaxClimb,
+        Math.min(
+          PHYSICS.diveAngle,
+          PHYSICS.glideAngle * this.glideScale - (speed - PHYSICS.trimSpeed) * PHYSICS.trimGain,
+        ),
+      );
       if (this.looping) {
         rate = PHYSICS.loopTurnRate * this.loopScale;
       } else if (diving) {
         commanded = headingCommand(this.facing, PHYSICS.diveAngle * this.diveScale);
         rate = PHYSICS.turnRate * Math.max(0.7, this.diveScale);
       } else if (holding) {
-        commanded = headingCommand(this.facing, PHYSICS.climbAngle);
+        // Near stall the wing stops answering and the nose falls through.
+        const climb = PHYSICS.climbAngle * airflow + trim * (1 - airflow);
+        commanded = headingCommand(this.facing, climb);
         rate = PHYSICS.climbTurnRate * this.climbScale;
       } else {
-        commanded = headingCommand(this.facing, PHYSICS.glideAngle * this.glideScale);
-        rate = PHYSICS.turnRate;
+        commanded = headingCommand(this.facing, trim);
+        rate = PHYSICS.trimTurnRate;
+      }
+      // Keep the dart under the top of the yard instead of climbing out of view.
+      if (!this.looping && plane.position.y < PHYSICS.ceilingY) {
+        const push = Math.min(1, (PHYSICS.ceilingY - plane.position.y) / 60);
+        const level = headingCommand(this.facing, 0.12);
+        commanded = wrapAngle(commanded + wrapAngle(level - commanded) * push);
       }
     }
 
@@ -760,7 +778,7 @@ export class GameWorld {
 
     let vx = Math.cos(steered) * speed;
     let vy = Math.sin(steered) * speed;
-    if (holding && !this.looping) vy -= PHYSICS.climbLift * this.climbScale;
+    if (holding && !this.looping) vy -= PHYSICS.climbLift * this.climbScale * airflow;
 
     if (this.looping) {
       if (this.facing >= 0 && vx < -0.45) {

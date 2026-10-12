@@ -70,7 +70,7 @@ const TITLES = [
   'Wood Pile',
 ];
 
-const HOOP_COLORS = ['#E0605A', '#F2B33D', '#5FB6E0', '#7FC96B', '#D96FA8'];
+const HOOP_COLORS = ['#E0605A', '#F2B33D', '#5FB6E0', '#9A6FE0', '#D96FA8'];
 
 type StackOutput = {
   blocks: BlockSpec[];
