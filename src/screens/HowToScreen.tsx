@@ -8,11 +8,11 @@ import { GhostButton } from '../components/ui';
 import { BIRO, BIRO_SOFT } from '../game/constants';
 
 const MOVES = [
-  { n: '1', gesture: 'Tap', result: 'Throws the dart. Every tap in the air flaps it up.' },
-  { n: '2', gesture: 'Let go', result: 'It falls. Keep tapping to stay in the air.' },
-  { n: '3', gesture: 'Hold', result: 'It climbs. The longer you hold, the higher it goes.' },
-  { n: '4', gesture: 'Keep holding', result: 'It loops over the top and flies back.' },
-  { n: '5', gesture: 'Pull down', result: 'It dives. When the bar is full, it is a power dive.' },
+  { n: '1', gesture: 'Tap', result: 'Throws the dart. Tap in the air for a little lift.' },
+  { n: '2', gesture: 'Hold', result: 'It climbs. The longer you hold, the higher it goes.' },
+  { n: '3', gesture: 'Keep holding', result: 'It loops over the top and flies back.' },
+  { n: '4', gesture: 'Pull down', result: 'It dives. When the bar is full, it is a power dive.' },
+  { n: '5', gesture: 'Let go', result: 'It glides. Out of a dive it swoops back up.' },
 ] as const;
 
 export function HowToScreen({

@@ -186,10 +186,6 @@ export class GameWorld {
   private loopStartFacing: 1 | -1 = 1;
   private loopSteps = 0;
   private holdSteps = 0;
-  private pendingFlap = false;
-  private lastFlapAt = -Infinity;
-  /** Forward speed a falling dart keeps, set by the throw. */
-  private cruiseSpeed: number = PHYSICS.launchSpeed;
   /** Steps left of nose-down after a dive is released. */
   private diveCarry = 0;
   private loopRadius: number = PHYSICS.loopMaxRadius;
@@ -496,8 +492,7 @@ export class GameWorld {
     const dx = plane.position.x - ax;
     const dy = plane.position.y - ay;
     const lengthSq = dx * dx + dy * dy;
-    // A little forgiving: a near miss with a flappy dart still pops it.
-    const reach = BALLOON.radius + PHYSICS.planeRadius + 12;
+    const reach = BALLOON.radius + PHYSICS.planeRadius + 6;
 
     for (const body of this.balloonBodies) {
       const meta = metaOf(body);
@@ -635,9 +630,6 @@ export class GameWorld {
     this.smash = Boolean(options.smash);
     this.facing = 1;
     this.diveCarry = 0;
-    this.pendingFlap = false;
-    this.lastFlapAt = -Infinity;
-    this.cruiseSpeed = options.speed;
     this.roll = 1;
     this.prevRoll = 1;
     this.looping = false;
@@ -692,11 +684,6 @@ export class GameWorld {
     this.grounded = false;
     this.crushed = false;
     this.crushAt = 0;
-  }
-
-  /** A finger just went down: flap on the next step, however short the tap. */
-  requestFlap() {
-    if (this.plane && !this.grounded && !this.crushed) this.pendingFlap = true;
   }
 
   startPowerDive() {
@@ -757,23 +744,6 @@ export class GameWorld {
       );
     }
 
-    // Every press is a flap: the dart is kicked upward at once, like a flappy
-    // bird, and a hold then carries on into the climb. The flap is queued the
-    // moment the finger lands, so even a tap too quick to span a physics step
-    // still flaps. Near the top of the yard it fades so the dart stays on screen.
-    if (pressed && this.holdSteps === 1) this.pendingFlap = true;
-    if (this.pendingFlap) {
-      this.pendingFlap = false;
-      if (this.clock - this.lastFlapAt > PHYSICS.fixedStep * 3) {
-        this.lastFlapAt = this.clock;
-        const room = Math.max(0, Math.min(1, (plane.position.y - PHYSICS.ceilingY) / 140));
-        Body.setVelocity(plane, {
-          x: plane.velocity.x,
-          y: Math.min(plane.velocity.y, -PHYSICS.flapSpeed * this.climbScale * room),
-        });
-      }
-    }
-
     const velocity = plane.velocity;
     let speed = Vector.magnitude(velocity);
     // Only a loop already under way gets help over the top. A plain climb pays
@@ -785,39 +755,16 @@ export class GameWorld {
     // 0 at the stall speed, 1 once there is real airspeed over the wing.
     const airflow = Math.max(0, Math.min(1, (speed - PHYSICS.stallSpeed) / 1.5));
 
-    // The flight path in right-facing terms, so climbs read the same both ways.
-    const rightPath = this.facing >= 0 ? flightPath : wrapAngle(Math.PI - flightPath);
-
-    if (!this.isPowerDiving && this.powerDiveUntil > 0 && this.clock >= this.powerDiveUntil) {
-      this.powerDiveUntil = 0;
-      Body.setDensity(plane, this.baseDensity);
-    }
-
-    // Hands off: no lift at all. The dart keeps its forward speed and falls,
-    // nose following the arc, until the next tap flaps it back up.
-    const freeFall =
-      !this.isPowerDiving && !this.looping && !diving && !holding && this.diveCarry <= 0;
-    if (freeFall) {
-      let vx = velocity.x;
-      const cruise = this.facing * this.cruiseSpeed;
-      vx += (cruise - vx) * PHYSICS.cruiseEase;
-      const vy = Math.min(velocity.y, PHYSICS.fallMaxSpeed);
-      this.pitch = Math.atan2(vy, vx);
-      Body.setAngle(plane, this.pitch);
-      Body.setAngularVelocity(plane, 0);
-      Body.setVelocity(plane, { x: vx, y: vy });
-      if (vx > 0.7) this.facing = 1;
-      else if (vx < -0.7) this.facing = -1;
-      this.applyGravityScale(plane);
-      return;
-    }
-
     let commanded = 0;
     let rate: number = PHYSICS.turnRate;
     if (this.isPowerDiving) {
       commanded = headingCommand(this.facing, PHYSICS.powerDiveAngle);
       rate = PHYSICS.turnRate * 2.4;
     } else {
+      if (this.powerDiveUntil > 0 && this.clock >= this.powerDiveUntil) {
+        this.powerDiveUntil = 0;
+        Body.setDensity(plane, this.baseDensity);
+      }
       // Left alone, a dart trims itself: too fast and the nose comes up and
       // trades speed for height, too slow and it drops to pick speed back up.
       const trim = Math.max(
@@ -846,9 +793,7 @@ export class GameWorld {
         const build = Math.min(1, this.holdSteps / PHYSICS.climbBuildSteps);
         const wanted = PHYSICS.climbStartAngle + (PHYSICS.climbAngle - PHYSICS.climbStartAngle) * build;
         const climb = Math.min(trim, wanted) * airflow + trim * (1 - airflow);
-        // Never steer the nose down while the finger is on: a flap that has
-        // the dart rising steeper than the climb asks for is left alone.
-        commanded = headingCommand(this.facing, airflow > 0.5 ? Math.min(climb, rightPath) : climb);
+        commanded = headingCommand(this.facing, climb);
         rate = PHYSICS.climbTurnRate * this.climbScale;
       } else {
         commanded = headingCommand(this.facing, trim);
@@ -889,6 +834,11 @@ export class GameWorld {
     if (holding && !this.looping) {
       const build = Math.min(1, this.holdSteps / PHYSICS.climbBuildSteps);
       vy -= PHYSICS.climbLift * this.climbScale * airflow * build;
+      // The moment a finger goes down the dart answers with a small lift,
+      // spread over a few steps so it rises rather than jolts.
+      if (this.holdSteps <= PHYSICS.tapLiftSteps) {
+        vy -= (PHYSICS.tapLift / PHYSICS.tapLiftSteps) * this.climbScale;
+      }
     }
 
     if (this.looping) {
@@ -909,15 +859,12 @@ export class GameWorld {
     }
 
     Body.setVelocity(plane, { x: vx, y: vy });
-    this.applyGravityScale(plane);
-  }
 
-  /** Floaty papers fall slower, heavy ones faster. */
-  private applyGravityScale(plane: Matter.Body) {
-    if (Math.abs(this.gravityScale - 1) <= 0.001) return;
-    const gScale = this.engine.gravity.scale ?? 0.001;
-    const fy = -plane.mass * PHYSICS.gravityY * gScale * (1 - this.gravityScale);
-    Body.applyForce(plane, plane.position, { x: 0, y: fy });
+    if (Math.abs(this.gravityScale - 1) > 0.001) {
+      const gScale = this.engine.gravity.scale ?? 0.001;
+      const fy = -plane.mass * PHYSICS.gravityY * gScale * (1 - this.gravityScale);
+      Body.applyForce(plane, plane.position, { x: 0, y: fy });
+    }
   }
 
   private handleCollisions = (event: Matter.IEventCollision<Matter.Engine>) => {

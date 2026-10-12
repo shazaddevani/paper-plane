@@ -68,7 +68,7 @@ export function HomeScreen({
             <PlaneEmblem paper={paper} streamer={streamer} size={46} />
             <View style={styles.brandText}>
               <Text style={styles.wordmark}>Paper Plane</Text>
-              <Text style={styles.tagline}>Tap to flap. Hold to climb. Hold longer to loop.</Text>
+              <Text style={styles.tagline}>Hold to climb. Hold longer to loop back.</Text>
               <Text style={styles.equippedFold}>
                 {paper.name} · {streamer.name}
               </Text>

@@ -12,15 +12,15 @@ function hintFor(stats: GameStats): string {
   switch (stats.phase) {
     case 'ready':
       return stats.planesLeft === stats.planesTotal
-        ? 'Tap to throw. Tap again to flap. Hold to climb.'
+        ? 'Tap to throw. Hold to climb. Hold longer to loop back.'
         : 'Tap to throw the next one';
     case 'flight':
       if (stats.powerDiving) return 'Power dive';
       if (stats.looping) return 'Looping back';
       if (stats.charge >= RUN.chargeMax) return 'Pull down for a power dive';
       if (stats.diving) return 'Diving';
-      if (stats.holding) return 'Climbing — keep holding to loop';
-      return 'Tap to flap. Hold to climb. Let go and it falls.';
+      if (stats.holding) return 'Climbing — keep holding to turn around';
+      return 'Hold to climb. Hold longer to loop back.';
     case 'settling':
       return 'Letting it settle';
     case 'cleared':

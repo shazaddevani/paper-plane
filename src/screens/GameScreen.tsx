@@ -47,7 +47,7 @@ export type GameStats = {
   coach: string | null;
 };
 
-type Learned = { flap: boolean; climb: boolean; dive: boolean };
+type Learned = { climb: boolean; dive: boolean };
 
 /** What a first-time player should try next, in the order Yard 1 asks for it. */
 function coachLine(
@@ -60,15 +60,13 @@ function coachLine(
   if (!enabled || stage > 1) return null;
   if (phase === 'ready') {
     if (throwsUsed === 0) return 'Tap anywhere to throw';
-    if (!learned.flap) return 'Throw, then keep tapping to stay up';
-    if (!learned.dive) return 'Throw, then drag down to dive';
-    if (!learned.climb) return 'Throw, then hold to climb';
+    if (!learned.climb) return 'Tap to throw, then hold to climb';
+    if (!learned.dive) return 'Tap to throw, then drag down to dive';
     return null;
   }
   if (phase !== 'flight' || throwsUsed < 2) return null;
-  if (!learned.flap) return 'Tap to flap up';
+  if (!learned.climb) return 'Hold your finger down to climb';
   if (!learned.dive) return 'Press and drag down to dive';
-  if (!learned.climb) return 'Hold to climb. Keep holding to loop';
   return null;
 }
 
@@ -141,7 +139,7 @@ export function GameScreen({
   const holdingRef = useRef(false);
   const divingRef = useRef(false);
   const holdStartRef = useRef(0);
-  const learnedRef = useRef<Learned>({ flap: false, climb: false, dive: false });
+  const learnedRef = useRef<Learned>({ climb: false, dive: false });
   const wasLoopingRef = useRef(false);
   const leadRef = useRef(0.28);
   const stageRef = useRef(stage);
@@ -203,7 +201,7 @@ export function GameScreen({
     powerName: paper.power.name,
     phase: 'ready',
     stage: 1,
-    coach: coachLine(coach, 1, 'ready', 0, { flap: false, climb: false, dive: false }),
+    coach: coachLine(coach, 1, 'ready', 0, { climb: false, dive: false }),
   });
 
   const [popups, setPopups] = useState<ScorePopup[]>([]);
@@ -656,7 +654,6 @@ export function GameScreen({
 
     if (phaseRef.current === 'ready') {
       throwPlane();
-      worldRef.current?.requestFlap();
       holdingRef.current = true;
       divingRef.current = false;
       holdStartRef.current = performance.now();
@@ -665,8 +662,6 @@ export function GameScreen({
     }
 
     if (phaseRef.current !== 'flight') return;
-    learnedRef.current.flap = true;
-    worldRef.current?.requestFlap();
     holdingRef.current = true;
     divingRef.current = false;
     holdStartRef.current = performance.now();

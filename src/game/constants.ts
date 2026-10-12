@@ -40,12 +40,9 @@ export const PHYSICS = {
   climbStartAngle: -0.2,
   /** Steps of holding to build from the gentle start to the full climb. */
   climbBuildSteps: 34,
-  /** Upward speed every press kicks the dart to, like a flap. */
-  flapSpeed: 4.6,
-  /** How quickly a falling dart settles back to its forward cruising speed. */
-  cruiseEase: 0.03,
-  /** Fastest a hands-off dart falls, in units per step. */
-  fallMaxSpeed: 11,
+  /** Upward speed a press adds straight away, spread over tapLiftSteps. */
+  tapLift: 2.2,
+  tapLiftSteps: 6,
   glideAngle: 0.19,
   /** Nose-down a dive asks for, about 54 degrees. Steep enough to reach low balloons. */
   diveAngle: 0.95,
