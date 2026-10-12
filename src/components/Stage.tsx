@@ -115,6 +115,7 @@ function GrassLine({ width, color, scale }: { width: number; color: string; scal
 export const Stage = React.memo(function Stage({
   world,
   frame,
+  planeFrame,
   cameraX,
   clock,
   divePos,
@@ -127,6 +128,7 @@ export const Stage = React.memo(function Stage({
 }: {
   world: GameWorld;
   frame: SharedValue<number[]>;
+  planeFrame: SharedValue<number[]>;
   cameraX: SharedValue<number>;
   clock: SharedValue<number>;
   divePos: SharedValue<{ x: number; y: number }>;
@@ -204,7 +206,7 @@ export const Stage = React.memo(function Stage({
               <PlaneBody
                 key={slot.id}
                 slot={slot}
-                frame={frame}
+                frame={planeFrame}
                 skin={paper}
                 streamer={streamer}
                 scale={scale}

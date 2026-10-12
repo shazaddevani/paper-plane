@@ -14,7 +14,7 @@ import { BALLOON, BIRO, BIRO_SOFT, MATERIALS, PHYSICS, PLANE_START_X, RUN, SCORI
 import { findPaper, findStreamer, findUpgrade, mergeFlight } from '../game/catalog';
 import { computeLayout } from '../game/layout';
 import { generateLevel } from '../game/levelGen';
-import { DamageEvent, GameWorld } from '../game/physics';
+import { DamageEvent, GameWorld, STRIDE } from '../game/physics';
 import { RunSummary } from '../game/rewards';
 import { pickYardTheme } from '../game/yardTheme';
 import { Profile } from '../storage/profile';
@@ -90,6 +90,8 @@ export function GameScreen({
   const balloonsTotal = level.balloons.length;
 
   const frame = useSharedValue<number[]>([]);
+  // The dart gets its own tiny channel so it can move every frame cheaply.
+  const planeFrame = useSharedValue<number[]>([]);
   const cameraX = useSharedValue(0);
   const clock = useSharedValue(0);
   const divePos = useSharedValue({ x: 0, y: 0 });
@@ -104,6 +106,7 @@ export function GameScreen({
   const divingRef = useRef(false);
   const holdStartRef = useRef(0);
   const wasLoopingRef = useRef(false);
+  const leadRef = useRef(0.28);
   const stageRef = useRef(stage);
   stageRef.current = stage;
   const totalThrowsRef = useRef(totalThrows);
@@ -332,7 +335,9 @@ export function GameScreen({
     });
     worldRef.current = instance;
     setWorld(instance);
-    frame.value = instance.buildFrame();
+    const first = instance.buildFrame();
+    frame.value = instance.takeChangedFrame(first) ?? first.slice();
+    planeFrame.value = first.slice(instance.planeFrameOffset, instance.planeFrameOffset + STRIDE);
     run.throwsUsed = 0;
     run.throwHoops = 0;
     run.settleElapsed = 0;
@@ -348,7 +353,7 @@ export function GameScreen({
       instance.destroy();
       worldRef.current = null;
     };
-  }, [buzz, frame, level, pushStats, tune, upgrade]);
+  }, [buzz, frame, level, planeFrame, pushStats, tune, upgrade]);
 
   useEffect(() => {
     if (!world) return;
@@ -396,7 +401,10 @@ export function GameScreen({
       }
       wasLoopingRef.current = world.isLooping;
 
-      frame.value = world.buildFrame(accumulator / PHYSICS.fixedStep);
+      const built = world.buildFrame(accumulator / PHYSICS.fixedStep);
+      planeFrame.value = built.slice(world.planeFrameOffset, world.planeFrameOffset + STRIDE);
+      const changed = world.takeChangedFrame(built);
+      if (changed) frame.value = changed;
       clock.value = now;
 
       const run = runRef.current;
@@ -404,7 +412,10 @@ export function GameScreen({
       let target = readyTarget;
 
       if (flying && plane) {
-        const lead = world.facingSign >= 0 ? 0.28 : 0.72;
+        // Ease the lead when the dart turns around, or the camera whips across.
+        const wantLead = world.facingSign >= 0 ? 0.28 : 0.72;
+        leadRef.current += (wantLead - leadRef.current) * (1 - Math.exp(-delta / 420));
+        const lead = leadRef.current;
         // Follow where the dart is drawn, not the raw sim, or the two shimmy.
         target = world.renderPlaneX - visibleWidth * lead;
       } else if (
@@ -488,6 +499,7 @@ export function GameScreen({
     finishRun,
     frame,
     layout.visibleWidth,
+    planeFrame,
     level.worldWidth,
     pushStats,
     tune,
@@ -516,6 +528,7 @@ export function GameScreen({
       smash: tune.smash,
     });
 
+    leadRef.current = 0.28;
     run.throwsUsed += 1;
     run.throwHoops = 0;
     run.flightElapsed = 0;
@@ -613,6 +626,7 @@ export function GameScreen({
         <Stage
           world={world}
           frame={frame}
+          planeFrame={planeFrame}
           cameraX={cameraX}
           clock={clock}
           divePos={divePos}

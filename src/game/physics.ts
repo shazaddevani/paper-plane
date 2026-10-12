@@ -1060,6 +1060,37 @@ export class GameWorld {
     return this.shownPlaneX;
   }
 
+  get planeFrameOffset() {
+    return this.planeSlot * STRIDE;
+  }
+
+  private published: number[] | null = null;
+
+  /**
+   * The frame to send to the screen, or null when nothing but the dart has
+   * moved since the last one. Most of a flight the stacks sit still, and
+   * resending ~150 bodies every frame is what made the dart stutter on phones.
+   */
+  takeChangedFrame(frame: number[]): number[] | null {
+    const last = this.published;
+    const skipFrom = this.planeSlot * STRIDE;
+    const skipTo = skipFrom + STRIDE;
+    if (last && last.length === frame.length) {
+      let changed = false;
+      for (let i = 0; i < frame.length; i += 1) {
+        if (i >= skipFrom && i < skipTo) continue;
+        if (Math.abs(frame[i] - last[i]) > 0.02) {
+          changed = true;
+          break;
+        }
+      }
+      if (!changed) return null;
+    }
+    const copy = frame.slice();
+    this.published = copy;
+    return copy;
+  }
+
   /**
    * @param alpha How far the screen is between the last physics step and the
    * next one, 0..1. Drawing the blend is what keeps motion smooth on 120 Hz
@@ -1128,6 +1159,6 @@ export class GameWorld {
           : 1 - Math.max(0, Math.min(1, meta.hp / meta.maxHp));
     }
 
-    return frame.slice();
+    return frame;
   }
 }

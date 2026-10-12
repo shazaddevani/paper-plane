@@ -284,13 +284,14 @@ export const PlaneBody = React.memo(function PlaneBody({
   scale,
   clock,
 }: SlotProps & { skin: PaperSkin; streamer: StreamerSkin; scale: number; clock: SharedValue<number> }) {
-  const index = slot.index;
+  // Fed its own five-number frame, so it always reads from 0.
+  void slot;
   // Drawn at screen size. A parent scale transform would rasterize the SVG and soften it.
   const length = PHYSICS.planeRadius * 9.2 * scale;
   const span = dartSpan(length, skin.foldKind);
 
   const animated = useAnimatedStyle(() => {
-    const base = index * STRIDE;
+    const base = 0;
     const buffer = frame.value;
     if (buffer.length <= base + 4) return { opacity: 0 };
     return {
@@ -304,7 +305,7 @@ export const PlaneBody = React.memo(function PlaneBody({
   });
 
   const heat = useAnimatedStyle(() => {
-    const base = index * STRIDE;
+    const base = 0;
     const buffer = frame.value;
     if (buffer.length <= base + 4) return { opacity: 0 };
     const extra = buffer[base + 4];
@@ -312,7 +313,7 @@ export const PlaneBody = React.memo(function PlaneBody({
   });
 
   const live = useAnimatedStyle(() => {
-    const base = index * STRIDE;
+    const base = 0;
     const buffer = frame.value;
     if (buffer.length <= base + 4) return { opacity: 1 };
     const extra = buffer[base + 4];
@@ -321,7 +322,7 @@ export const PlaneBody = React.memo(function PlaneBody({
   });
 
   const wad = useAnimatedStyle(() => {
-    const base = index * STRIDE;
+    const base = 0;
     const buffer = frame.value;
     if (buffer.length <= base + 4) return { opacity: 0 };
     const extra = buffer[base + 4];
@@ -333,9 +334,10 @@ export const PlaneBody = React.memo(function PlaneBody({
   });
 
   const flutter = useAnimatedStyle(() => {
-    const flap = Math.sin(clock.value * 0.016);
+    // A gentle ripple. A big flap made the whole dart look shaky.
+    const flap = Math.sin(clock.value * 0.011);
     return {
-      transform: [{ translateY: flap * span * 0.55 }, { rotate: `${flap * 0.22}rad` }],
+      transform: [{ translateY: flap * span * 0.16 }, { rotate: `${flap * 0.07}rad` }],
     };
   });
 
