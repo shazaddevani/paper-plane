@@ -134,6 +134,14 @@ type BalloonTie = {
 const PLANE_DAMAGE_FACTOR = 3;
 const STACK_DAMAGE_FACTOR = 1.15;
 
+/** Share of its speed the dart keeps after punching through each material. */
+const PLANE_KEEP_AFTER_BREAK: Record<MaterialKey, number> = {
+  cardboard: 0.86,
+  glass: 0.8,
+  wood: 0.68,
+  brick: 0.5,
+};
+
 function metaOf(body: Matter.Body): BodyMeta | undefined {
   return (body.plugin as { meta?: BodyMeta } | undefined)?.meta;
 }
@@ -864,6 +872,26 @@ export class GameWorld {
       }
 
       const speed = Vector.magnitude(Vector.sub(bodyA.velocity, bodyB.velocity));
+
+      // A real hit from the dart breaks whatever it strikes, and the dart
+      // punches on through, slowed by what it broke. Only a soft brush bounces.
+      if (involvesPlane && speed >= PHYSICS.planeBreakSpeed) {
+        const planeIsA = metaA?.kind === 'plane';
+        const planeBody = planeIsA ? bodyA : bodyB;
+        const target = planeIsA ? bodyB : bodyA;
+        const targetMeta = planeIsA ? metaB : metaA;
+        if (targetMeta && targetMeta.kind === 'block' && !targetMeta.dead) {
+          this.applyDamage(target, targetMeta.hp, speed * planeBody.mass);
+          pair.isActive = false;
+          const keep = PLANE_KEEP_AFTER_BREAK[targetMeta.material ?? 'cardboard'];
+          Body.setVelocity(planeBody, {
+            x: planeBody.velocity.x * keep,
+            y: planeBody.velocity.y * keep,
+          });
+          continue;
+        }
+      }
+
       if (speed < 1) continue;
 
       const massA = bodyA.isStatic ? Infinity : bodyA.mass;

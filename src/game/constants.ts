@@ -22,6 +22,8 @@ export const PHYSICS = {
   planeRadius: 14,
   /** Drawn nose-to-tail length of the dart in world units. */
   planeDrawLength: 92,
+  /** A dart hit at least this fast breaks whatever it strikes. */
+  planeBreakSpeed: 3.5,
   planeDensity: 0.0075,
   planeAirFriction: 0.0034,
 
