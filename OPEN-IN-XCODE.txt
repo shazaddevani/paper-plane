@@ -1,0 +1,15 @@
+Paper Plane — open in Xcode (Mac)
+
+1. Install Node if needed: https://nodejs.org
+2. In this folder:
+
+   npm install
+   cd ios
+   pod install
+   open PaperPlane.xcworkspace
+
+3. In Xcode: Settings → Accounts → add your paid Apple Developer Apple ID.
+4. Select the PaperPlane target → Signing & Capabilities → Team.
+5. Product → Archive → Distribute App → App Store Connect.
+
+Open the .xcworkspace, not the .xcodeproj. CocoaPods will not link if you open the project file.

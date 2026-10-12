@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "Paper Plane",
+    "slug": "paperplane",
+    "owner": "shazad256s-team",
+    "version": "1.9.20",
+    "orientation": "landscape",
+    "icon": "./assets/icon.png",
+    "scheme": "paperplane",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#1B2645",
+    "primaryColor": "#F2B33D",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "dev.paperplaneyard.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleDisplayName": "Paper Plane",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "dev.paperplaneyard.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#1B2645",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7aa7ab65-6b7b-4365-b172-a7f58bef149f"
+      }
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 15000,
+      "url": "https://u.expo.dev/7aa7ab65-6b7b-4365-b172-a7f58bef149f"
+    },
+    "runtimeVersion": "exposdk:57.0.0",
+    "plugins": [
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "LANDSCAPE"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1B2645",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180
+        }
+      ]
+    ]
+  }
+}
