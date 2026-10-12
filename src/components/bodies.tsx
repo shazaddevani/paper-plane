@@ -294,12 +294,15 @@ export const PlaneBody = React.memo(function PlaneBody({
     const base = 0;
     const buffer = frame.value;
     if (buffer.length <= base + 4) return { opacity: 0 };
+    // After a loop-back the dart rolls upright instead of flying home upside down.
+    const roll = buffer.length > base + 5 ? buffer[base + 5] : 1;
     return {
       opacity: buffer[base + 3],
       transform: [
         { translateX: buffer[base] * scale },
         { translateY: buffer[base + 1] * scale },
         { rotate: `${buffer[base + 2]}rad` },
+        { scaleY: Math.abs(roll) < 0.08 ? (roll < 0 ? -0.08 : 0.08) : roll },
       ],
     };
   });

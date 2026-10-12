@@ -171,6 +171,10 @@ export class GameWorld {
   private facing: 1 | -1 = 1;
   private looping = false;
   private didLoopThisHold = false;
+  /** 1 upright, -1 rolled over. Follows `facing` so a loop-back rolls upright. */
+  private roll = 1;
+  private loopStartFacing: 1 | -1 = 1;
+  private prevRoll = 1;
   private grounded = false;
   private crushed = false;
   private crushAt = 0;
@@ -610,6 +614,8 @@ export class GameWorld {
     this.pierce = Boolean(options.pierce);
     this.smash = Boolean(options.smash);
     this.facing = 1;
+    this.roll = 1;
+    this.prevRoll = 1;
     this.looping = false;
     this.didLoopThisHold = false;
     const radius = PHYSICS.planeRadius * (options.radiusScale ?? 1);
@@ -695,14 +701,21 @@ export class GameWorld {
     if (!plane || this.grounded || this.crushed) return;
 
     const diving = Boolean(input.diving) && !this.isPowerDiving;
-    const holding = Boolean(input.holding) && !diving && !this.isPowerDiving;
+    const pressed = Boolean(input.holding) && !diving && !this.isPowerDiving;
+    // Once a hold has looped the dart round, it has done its job: keep
+    // holding and the dart simply flies on the new way instead of clawing for
+    // height it no longer has the speed for.
+    const holding = pressed && !this.didLoopThisHold;
     const wantLoop = Boolean(input.loop) && holding;
 
-    if (!holding) {
+    if (!pressed) {
       this.looping = false;
       this.didLoopThisHold = false;
-    } else if (wantLoop && !this.didLoopThisHold) {
+    } else if (!holding) {
+      this.looping = false;
+    } else if (wantLoop && !this.didLoopThisHold && !this.looping) {
       this.looping = true;
+      this.loopStartFacing = this.facing;
     }
 
     const velocity = plane.velocity;
@@ -764,7 +777,7 @@ export class GameWorld {
 
     let steered: number;
     if (this.looping) {
-      const dir = this.facing >= 0 ? -1 : 1;
+      const dir = this.loopStartFacing >= 0 ? -1 : 1;
       steered = wrapAngle(flightPath + dir * authority);
     } else {
       let delta = wrapAngle(commanded - flightPath);
@@ -781,12 +794,14 @@ export class GameWorld {
     if (holding && !this.looping) vy -= PHYSICS.climbLift * this.climbScale * airflow;
 
     if (this.looping) {
-      if (this.facing >= 0 && vx < -0.45) {
-        this.facing = -1;
-        this.looping = false;
-        this.didLoopThisHold = true;
-      } else if (this.facing < 0 && vx > 0.45) {
-        this.facing = 1;
+      // Turn the facing once the dart is past straight up, but keep the loop
+      // going over the top until it is flying level the other way. Ending it
+      // at the vertical left the dart hanging nose-up until it stalled.
+      if (this.facing >= 0 && vx < -0.45) this.facing = -1;
+      else if (this.facing < 0 && vx > 0.45) this.facing = 1;
+      const level = this.facing * Math.cos(steered);
+      const turned = this.loopStartFacing !== this.facing;
+      if (turned && level > 0.94) {
         this.looping = false;
         this.didLoopThisHold = true;
       }
@@ -960,6 +975,9 @@ export class GameWorld {
       this.prevPlanePos.y = this.plane.position.y;
     }
     this.applyFlight(input);
+    this.prevRoll = this.roll;
+    // Roll toward the way the dart faces, quickly but not instantly.
+    this.roll += Math.max(-0.14, Math.min(0.14, this.facing - this.roll));
     this.liftBalloons();
     Engine.update(this.engine, deltaMs);
     this.sweepBalloons();
@@ -1062,6 +1080,12 @@ export class GameWorld {
 
   get planeFrameOffset() {
     return this.planeSlot * STRIDE;
+  }
+
+  /** 1 upright, -1 rolled over, blended like the pose. */
+  rollAt(alpha = 1) {
+    const t = Math.max(0, Math.min(1, alpha));
+    return this.prevRoll + (this.roll - this.prevRoll) * t;
   }
 
   private published: number[] | null = null;

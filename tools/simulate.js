@@ -254,6 +254,9 @@ function loopProbe() {
     const plane = world.planeBody;
     if (!plane) break;
     if (reversedAt < 0 && plane.velocity.x < -0.5) reversedAt = i;
+    // Judge it shortly after the turn: by the end of the window a fast
+    // return can already have reached the backstop behind the throwing line.
+    if (reversedAt >= 0 && i >= reversedAt + 40) break;
   }
   const plane = world.planeBody;
   const vx = plane ? plane.velocity.x : 0;

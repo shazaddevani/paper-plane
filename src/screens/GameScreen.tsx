@@ -337,7 +337,10 @@ export function GameScreen({
     setWorld(instance);
     const first = instance.buildFrame();
     frame.value = instance.takeChangedFrame(first) ?? first.slice();
-    planeFrame.value = first.slice(instance.planeFrameOffset, instance.planeFrameOffset + STRIDE);
+    planeFrame.value = [
+      ...first.slice(instance.planeFrameOffset, instance.planeFrameOffset + STRIDE),
+      1,
+    ];
     run.throwsUsed = 0;
     run.throwHoops = 0;
     run.settleElapsed = 0;
@@ -401,8 +404,11 @@ export function GameScreen({
       }
       wasLoopingRef.current = world.isLooping;
 
-      const built = world.buildFrame(accumulator / PHYSICS.fixedStep);
-      planeFrame.value = built.slice(world.planeFrameOffset, world.planeFrameOffset + STRIDE);
+      const alpha = accumulator / PHYSICS.fixedStep;
+      const built = world.buildFrame(alpha);
+      const planePose = built.slice(world.planeFrameOffset, world.planeFrameOffset + STRIDE);
+      planePose.push(world.rollAt(alpha));
+      planeFrame.value = planePose;
       const changed = world.takeChangedFrame(built);
       if (changed) frame.value = changed;
       clock.value = now;
