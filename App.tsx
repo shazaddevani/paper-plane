@@ -4,6 +4,7 @@ import * as Updates from 'expo-updates';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Platform,
   StyleSheet,
   Text,
@@ -18,7 +19,7 @@ import { RotatePrompt } from './src/components/Rotate';
 import { describeItem } from './src/game/catalog';
 import { PALETTE } from './src/game/constants';
 import { dailySeed, todayKey } from './src/game/rng';
-import { preloadSounds, setSoundEnabled } from './src/game/sound';
+import { preloadSounds, resumeMusic, setMusicEnabled, setSoundEnabled } from './src/game/sound';
 import { RunSummary } from './src/game/rewards';
 import { GameScreen } from './src/screens/GameScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -118,8 +119,19 @@ function Root() {
   }, []);
 
   useEffect(() => {
-    if (profile) setSoundEnabled(profile.soundOn);
+    if (!profile) return;
+    setSoundEnabled(profile.soundOn);
+    setMusicEnabled(profile.musicOn);
   }, [profile]);
+
+  // The phone pauses our audio when the app goes to the background; pick the
+  // music back up when the player returns.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') resumeMusic();
+    });
+    return () => sub.remove();
+  }, []);
 
   const commit = useCallback((next: Profile) => {
     setProfile(next);
@@ -230,6 +242,7 @@ function Root() {
           onOpenStickers={() => setRoute({ name: 'stickers' })}
           onOpenHowTo={() => setRoute({ name: 'howto' })}
           onToggleSound={() => commit({ ...profile, soundOn: !profile.soundOn })}
+          onToggleMusic={() => commit({ ...profile, musicOn: !profile.musicOn })}
         />
       ) : null}
 

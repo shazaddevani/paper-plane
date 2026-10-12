@@ -82,7 +82,55 @@ export function preloadSounds() {
   (Object.keys(SOURCES) as SfxName[]).forEach((name) => pool(name));
 }
 
+const MUSIC = require('../../assets/sfx/music.wav');
+/** Quiet enough to sit under the effects and never tire the ear. */
+const MUSIC_VOLUME = 0.3;
+let musicPlayer: AudioPlayer | null = null;
+let musicWanted = false;
+
+function music(): AudioPlayer | null {
+  if (!musicPlayer) {
+    try {
+      musicPlayer = createAudioPlayer(MUSIC);
+      musicPlayer.loop = true;
+      musicPlayer.volume = MUSIC_VOLUME;
+    } catch {
+      musicPlayer = null;
+    }
+  }
+  return musicPlayer;
+}
+
+/** Start or stop the background music loop. */
+export function setMusicEnabled(on: boolean) {
+  musicWanted = on;
+  const player = music();
+  if (!player) return;
+  try {
+    if (on) {
+      if (!player.playing) player.play();
+    } else {
+      player.pause();
+    }
+  } catch {
+    // Ignore: music is a nicety.
+  }
+}
+
+/** Pick the music back up after the app returns, or after a browser blocked autoplay. */
+export function resumeMusic() {
+  if (!musicWanted) return;
+  const player = music();
+  try {
+    if (player && !player.playing) player.play();
+  } catch {
+    // Ignore.
+  }
+}
+
 export function playSfx(name: SfxName) {
+  // A tap is a user gesture, which browsers need before they allow music.
+  resumeMusic();
   if (!enabled) return;
   const now = Date.now();
   const gap = MIN_GAP_MS[name];

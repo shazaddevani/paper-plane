@@ -42,8 +42,13 @@ export type LevelSpec = {
   worldWidth: number;
 };
 
-/** Height lost per unit flown by a hands-off glide, for placing Yard 1's easy balloon. */
-const YARD_ONE_GLIDE_SLOPE = 0.198;
+/**
+ * The arc a single tap throws the dart on (it flaps once, then falls), as
+ * y = start + B*dx + C*dx^2 with dx measured from the throwing line. Fitted
+ * from the flight model; used to put Yard 1's easy balloon right on it.
+ */
+const SINGLE_TAP_B = -0.4812;
+const SINGLE_TAP_C = 0.0012077;
 
 /** Close enough that a slow glide still reaches the first pile on a phone. */
 const FIRST_STACK_X = 720;
@@ -248,24 +253,36 @@ export function generateLevel(seed: number, dayKey: string | null, stage = 1): L
   }
 
   if (stageIndex === 1) {
-    // Yard 1 is the lesson. One balloon sits on the plain glide line so the
-    // first tap pops it, one floats high so it takes a climb, and one is tied
-    // low past the stacks so it takes a dive. A lucky tap no longer clears it.
+    // Yard 1 is the lesson. One balloon sits on the arc of a single tap so the
+    // first throw pops it, one floats high so it takes tapping to stay up, and
+    // one is tied low past the stacks so it takes flying there and dropping.
     const floats = balloons
       .filter((b) => b.anchorY !== null)
       .sort((a, b) => a.x - b.x);
-    const glideY = (x: number) => PLANE_START_Y + (x - PLANE_START_X) * YARD_ONE_GLIDE_SLOPE;
-    const glide = floats[0];
-    if (glide && glide.anchorY !== null) {
-      glide.y = clamp(glideY(glide.x) + rng.range(-10, 10), 300, glide.anchorY - 70);
+    const tapY = (x: number) => {
+      const dx = x - PLANE_START_X;
+      return PLANE_START_Y + SINGLE_TAP_B * dx + SINGLE_TAP_C * dx * dx;
+    };
+    const easy = floats[0];
+    if (easy && easy.anchorY !== null) {
+      if (tapY(easy.x) <= easy.anchorY - 60) {
+        easy.y = tapY(easy.x) + rng.range(-8, 8);
+      } else {
+        // The first pile is too tall for the arc to clear above it, so the
+        // easy balloon moves just in front of it, tied to a peg in the grass.
+        const front = Math.min(...blocks.filter((b) => b.id.startsWith('s0-')).map((b) => b.x - b.w / 2));
+        easy.x = front - 34;
+        easy.y = tapY(easy.x) + rng.range(-6, 6);
+        easy.anchorY = GROUND_Y - 24;
+      }
     }
-    const climb = floats[1];
-    // High enough that a glide passes under it, low enough for one good hold.
-    if (climb) climb.y = glideY(climb.x) - rng.range(110, 140);
+    const high = floats[1];
+    // Far above where a single tap falls: a few taps keep the dart up to it.
+    if (high) high.y = rng.range(290, 340);
     balloons.push({
       id: 's-dive',
       x: lastStackEnd + rng.range(100, 130),
-      y: GROUND_Y - rng.range(100, 118),
+      y: GROUND_Y - rng.range(140, 165),
       color: rng.pick(BALLOON.colors),
       anchorY: GROUND_Y - 24,
     });
@@ -275,9 +292,10 @@ export function generateLevel(seed: number, dayKey: string | null, stage = 1): L
   if (stageIndex <= 1) {
     throws = clamp(Math.max(balloons.length, 2), 2, 3);
   } else if (stageIndex === 2) {
-    throws = clamp(balloons.length, 2, 4);
+    // One more than the gliding dart needed: keeping a flappy dart up is harder.
+    throws = clamp(balloons.length, 2, RUN.maxThrows);
   } else if (stageIndex === 3) {
-    throws = clamp(balloons.length - 1, 2, RUN.maxThrows);
+    throws = clamp(balloons.length, 2, RUN.maxThrows);
   } else {
     throws = clamp(balloons.length - 1 - Math.floor((stageIndex - 2) / 2), 2, RUN.maxThrows);
   }

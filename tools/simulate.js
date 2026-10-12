@@ -9,18 +9,22 @@ const path = require('path');
 const OUT = path.join(__dirname, '..', '.sim');
 const { generateLevel } = require(path.join(OUT, 'levelGen.js'));
 const { GameWorld } = require(path.join(OUT, 'physics.js'));
-const { PHYSICS, RUN, GROUND_Y } = require(path.join(OUT, 'constants.js'));
+const { PHYSICS, RUN, GROUND_Y, GRAVITY_PER_STEP } = require(path.join(OUT, 'constants.js'));
 
 const STEP = PHYSICS.fixedStep;
 const MAX_STEPS = 60 * 20;
 
+/** Tap state for the autopilot, reset at the start of every flight. */
+const pilot = { tapHold: 0, sinceTap: 99 };
+
 /**
- * Stands in for a competent player: pick the next balloon still up, then hold
- * the nose down whenever the plane is sitting above it.
+ * Stands in for a competent player of the flappy dart: pick the next balloon
+ * still up, work out where the dart would fall to by the time it gets there,
+ * tap whenever that is below the balloon, and dive when it is well above.
  */
 function autopilot(world, level, popped) {
   const plane = world.planeBody;
-  if (!plane) return false;
+  if (!plane) return {};
 
   // Go for balloons in the open first; the buried ones need the stack taken
   // apart, which mostly happens as a side effect of the flights before them.
@@ -34,19 +38,31 @@ function autopilot(world, level, popped) {
     }
     if (target) break;
   }
-  if (!target) return { holding: false, diving: false };
 
-  // Descend at whatever rate lands the plane level with the balloon exactly
-  // when it arrives, rather than diving flat out and sailing past underneath.
+  if (pilot.tapHold > 0) {
+    pilot.tapHold -= 1;
+    pilot.sinceTap = 0;
+    return { holding: true };
+  }
+  pilot.sinceTap += 1;
+  if (!target) return {};
+
   const dx = Math.max(40, target.x - plane.position.x);
-  const dy = target.y - plane.position.y;
-  const desiredVy = Math.max(-6, Math.min(9, (dy / dx) * Math.max(1, plane.velocity.x)));
-  const wantDown = plane.velocity.y < desiredVy;
-  return { holding: true, diving: wantDown };
+  const t = dx / Math.max(3, Math.abs(plane.velocity.x));
+  const predicted = plane.position.y + plane.velocity.y * t + 0.5 * GRAVITY_PER_STEP * t * t;
+
+  if (predicted > target.y + 8 && pilot.sinceTap > 8) {
+    pilot.tapHold = 4;
+    return { holding: true };
+  }
+  if (predicted < target.y - 70 && dx < 260) return { holding: true, diving: true };
+  return {};
 }
 
 function flyOne(world, level, popped, stats) {
   world.throwPlane({ density: PHYSICS.planeDensity, speed: PHYSICS.launchSpeed });
+  pilot.tapHold = 4;
+  pilot.sinceTap = 0;
 
   let steps = 0;
   let maxX = 0;
@@ -111,7 +127,7 @@ function flyOne(world, level, popped, stats) {
 }
 
 function runLevel(seed, verbose, trace) {
-  const level = generateLevel(seed, null);
+  const level = generateLevel(seed, null, STAGE);
   const popped = new Set();
   let broken = 0;
   let hoops = 0;
@@ -174,7 +190,7 @@ function runLevel(seed, verbose, trace) {
 
 /** Stability check: nothing should move while nobody has thrown anything. */
 function restCheck(seed) {
-  const level = generateLevel(seed, null);
+  const level = generateLevel(seed, null, STAGE);
   const world = new GameWorld(level, {});
   for (let i = 0; i < 60 * 3; i += 1) world.step(STEP, { diving: false });
   const frame = world.buildFrame();
@@ -276,6 +292,8 @@ loopProbe();
 const count = Number(process.argv[2] ?? 12);
 const verbose = process.argv.includes('-v');
 const trace = process.argv.includes('--trace');
+// `--stage=3` flies yard 3 instead of yard 1.
+const STAGE = Number((process.argv.find((a) => a.startsWith('--stage=')) ?? '--stage=1').split('=')[1]) || 1;
 const rows = [];
 let cleared = 0;
 let worstDrift = 0;

@@ -12,9 +12,9 @@ import Animated, {
 import { BIRO } from '../game/constants';
 
 /**
- * A big, friendly instruction for first-time players, shown in the open sky
- * under the score bar. Fades between lines and breathes gently so it is seen
- * without getting in the way. Never takes touches.
+ * A big, friendly instruction for first-time players, shown just under the
+ * score bar, clear of the balloons. Fades between lines and breathes gently
+ * so it is seen without getting in the way. Never takes touches.
  */
 export function CoachPrompt({ text }: { text: string | null }) {
   const [shown, setShown] = useState(text);
@@ -71,7 +71,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: '24%',
+    // Just under the score bar, above where Yard 1's high balloon floats.
+    top: 54,
     alignItems: 'center',
     zIndex: 6,
     pointerEvents: 'none',

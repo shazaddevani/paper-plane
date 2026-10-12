@@ -31,6 +31,7 @@ export function HomeScreen({
   onOpenStickers,
   onOpenHowTo,
   onToggleSound,
+  onToggleMusic,
 }: {
   profile: Profile;
   onPlayDaily: () => void;
@@ -39,6 +40,7 @@ export function HomeScreen({
   onOpenStickers: () => void;
   onOpenHowTo: () => void;
   onToggleSound: () => void;
+  onToggleMusic: () => void;
 }) {
   const today = todayKey();
   const [countdown, setCountdown] = useState(() => msUntilNextDay());
@@ -66,7 +68,7 @@ export function HomeScreen({
             <PlaneEmblem paper={paper} streamer={streamer} size={46} />
             <View style={styles.brandText}>
               <Text style={styles.wordmark}>Paper Plane</Text>
-              <Text style={styles.tagline}>Hold to climb. Hold longer to loop back.</Text>
+              <Text style={styles.tagline}>Tap to flap. Hold to climb. Hold longer to loop.</Text>
               <Text style={styles.equippedFold}>
                 {paper.name} · {streamer.name}
               </Text>
@@ -75,6 +77,15 @@ export function HomeScreen({
 
           <View style={styles.headerRight}>
             <View style={styles.headerPills}>
+              <Pressable
+                accessibilityRole="switch"
+                accessibilityState={{ checked: profile.musicOn }}
+                accessibilityLabel="Background music"
+                onPress={onToggleMusic}
+                style={({ pressed }) => [styles.soundPill, pressed && styles.soundPillPressed]}
+              >
+                <Text style={styles.soundText}>{profile.musicOn ? 'Music on' : 'Music off'}</Text>
+              </Pressable>
               <Pressable
                 accessibilityRole="switch"
                 accessibilityState={{ checked: profile.soundOn }}
