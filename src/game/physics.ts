@@ -1099,7 +1099,9 @@ export class GameWorld {
   isPlaneOutOfBounds() {
     if (!this.plane) return true;
     const { x, y } = this.plane.position;
-    return y > GROUND_Y + 160 || x > this.level.worldWidth + 240 || x < -240;
+    // Behind the throwing line the camera cannot follow, so a dart that loops
+    // back off the left edge is done as soon as it leaves the screen.
+    return y > GROUND_Y + 160 || x > this.level.worldWidth + 240 || x < -70;
   }
 
   /** Where the dart is drawn this frame, for the camera to follow. */

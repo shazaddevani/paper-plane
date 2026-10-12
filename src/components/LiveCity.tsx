@@ -391,13 +391,19 @@ export function LiveCity({ children }: { children?: React.ReactNode }) {
         <View
           style={{
             position: 'absolute',
-            right: width * 0.12,
-            top: height * 0.1,
-            width: 64,
-            height: 64,
-            borderRadius: 32,
+            // Up in the open sky between the title and the top-right
+            // controls, so it never sits behind the coins or Back.
+            left: width * 0.46,
+            top: height * 0.03,
+            width: 46,
+            height: 46,
+            borderRadius: 23,
             backgroundColor: '#F2D7A4',
-            opacity: 0.35,
+            opacity: 0.55,
+            shadowColor: '#F2D7A4',
+            shadowOpacity: 0.6,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 0 },
           }}
         />
 

@@ -17,6 +17,14 @@ export type RunSummary = {
   itemsSmashed: number;
   balloonsPopped: number;
   balloonsTotal: number;
+  /** Fewest planes any single cleared yard took this sitting, or null if none was cleared. */
+  fewestPlanesForClear: number | null;
+  /** Most planes left unthrown when a yard was cleared. */
+  mostSparePlanes: number;
+  /** Most things smashed in any one yard. */
+  bestYardSmashed: number;
+  /** Most power dives in any one yard. */
+  bestYardPowerDives: number;
 };
 
 export type StickerContext = {
@@ -54,7 +62,7 @@ export const STICKERS: Sticker[] = [
     name: 'One Plane',
     requirement: 'Clear a yard with a single plane.',
     coins: 700,
-    test: (summary) => summary.cleared && summary.planesUsed <= 1,
+    test: (summary) => summary.fewestPlanesForClear !== null && summary.fewestPlanesForClear <= 1,
   },
   {
     id: 'sticker-three-hoops',
@@ -68,21 +76,21 @@ export const STICKERS: Sticker[] = [
     name: 'Two In Pocket',
     requirement: 'Clear a yard with two planes unthrown.',
     coins: 500,
-    test: (summary) => summary.cleared && summary.planesTotal - summary.planesUsed >= 2,
+    test: (summary) => summary.mostSparePlanes >= 2,
   },
   {
     id: 'sticker-wrecking',
     name: 'Wrecking Ball',
     requirement: 'Smash 30 things in one yard.',
     coins: 380,
-    test: (summary) => summary.itemsSmashed >= 30,
+    test: (summary) => summary.bestYardSmashed >= 30,
   },
   {
     id: 'sticker-nosedive',
     name: 'Nosedive',
     requirement: 'Use three power dives in one yard.',
     coins: 420,
-    test: (summary) => summary.powerDives >= 3,
+    test: (summary) => summary.bestYardPowerDives >= 3,
   },
   {
     id: 'sticker-chain',

@@ -192,6 +192,7 @@ export function ShedScreen({
                   <Text style={styles.cardBlurb}>{entry.blurb}</Text>
                 </View>
 
+                {locked ? <View style={styles.lockVeil} /> : null}
                 {locked ? (
                   <View style={styles.lockRow}>
                     <Text style={styles.lockText}>Opens at level {entry.levelRequired}</Text>
@@ -255,7 +256,17 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     gap: 12,
   },
-  cardLocked: { opacity: 0.55 },
+  // Dim a locked card without making it see-through, or the city shows through the text.
+  cardLocked: {},
+  lockVeil: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(40, 30, 24, 0.22)',
+    pointerEvents: 'none',
+  },
   preview: {
     height: 70,
     alignItems: 'flex-start',

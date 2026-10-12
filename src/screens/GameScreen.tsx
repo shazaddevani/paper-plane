@@ -49,6 +49,8 @@ type SessionTotals = {
   balloonsTotal: number;
   titles: string[];
   foldedCurrentYard: boolean;
+  fewestPlanesForClear: number | null;
+  mostSparePlanes: number;
 };
 
 export function GameScreen({
@@ -128,6 +130,11 @@ export function GameScreen({
     bestThrowHoops: 0,
     powerDives: 0,
     itemsSmashed: 0,
+    // Per-yard counts, for stickers that ask for something "in one yard".
+    yardSmashed: 0,
+    yardPowerDives: 0,
+    bestYardSmashed: 0,
+    bestYardPowerDives: 0,
     balloonsPopped: 0,
     settleElapsed: 0,
     flightElapsed: 0,
@@ -141,6 +148,8 @@ export function GameScreen({
     balloonsTotal: 0,
     titles: [],
     foldedCurrentYard: false,
+    fewestPlanesForClear: null,
+    mostSparePlanes: 0,
   });
 
   const [stats, setStats] = useState<GameStats>({
@@ -245,6 +254,10 @@ export function GameScreen({
         powerDives: run.powerDives,
         bestCombo: run.bestCombo,
         itemsSmashed: run.itemsSmashed,
+        fewestPlanesForClear: session.fewestPlanesForClear,
+        mostSparePlanes: session.mostSparePlanes,
+        bestYardSmashed: run.bestYardSmashed,
+        bestYardPowerDives: run.bestYardPowerDives,
         balloonsPopped: run.balloonsPopped,
         balloonsTotal: session.balloonsTotal,
       });
@@ -260,6 +273,14 @@ export function GameScreen({
     run.score += SCORING.clearBonus;
     run.score += Math.max(0, totalThrowsRef.current - run.throwsUsed) * SCORING.throwUnused;
     session.titles.push(titleRef.current);
+    session.fewestPlanesForClear =
+      session.fewestPlanesForClear === null
+        ? run.throwsUsed
+        : Math.min(session.fewestPlanesForClear, run.throwsUsed);
+    session.mostSparePlanes = Math.max(
+      session.mostSparePlanes,
+      totalThrowsRef.current - run.throwsUsed,
+    );
     foldCurrentYard();
     session.yardsCleared += 1;
     phaseRef.current = 'cleared';
@@ -303,6 +324,8 @@ export function GameScreen({
           buzz(Haptics.ImpactFeedbackStyle.Heavy);
         } else {
           run.itemsSmashed += 1;
+          run.yardSmashed += 1;
+          run.bestYardSmashed = Math.max(run.bestYardSmashed, run.yardSmashed);
           run.score += MATERIALS[event.material ?? 'cardboard'].score * run.combo;
         }
       } else if (event.impulse > 14 && now - run.lastHapticAt > 90) {
@@ -343,6 +366,8 @@ export function GameScreen({
     ];
     run.throwsUsed = 0;
     run.throwHoops = 0;
+    run.yardSmashed = 0;
+    run.yardPowerDives = 0;
     run.settleElapsed = 0;
     run.flightElapsed = 0;
     holdingRef.current = false;
@@ -398,8 +423,9 @@ export function GameScreen({
       }
       if (accumulator > PHYSICS.fixedStep * 4) accumulator = 0;
 
-      if (world.isLooping && !wasLoopingRef.current) {
-        buzz(Haptics.ImpactFeedbackStyle.Medium);
+      if (world.isLooping !== wasLoopingRef.current) {
+        // Refresh the hint both ways, or "Looping back" outlives the loop.
+        if (world.isLooping) buzz(Haptics.ImpactFeedbackStyle.Medium);
         statsDirty.current = true;
       }
       wasLoopingRef.current = world.isLooping;
@@ -589,6 +615,8 @@ export function GameScreen({
       const plane = currentWorld.planeBody;
       run.charge = 0;
       run.powerDives += 1;
+      run.yardPowerDives += 1;
+      run.bestYardPowerDives = Math.max(run.bestYardPowerDives, run.yardPowerDives);
       run.score += SCORING.powerDiveBonus;
       if (plane) {
         divePos.value = { x: plane.position.x, y: plane.position.y };

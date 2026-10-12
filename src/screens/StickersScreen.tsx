@@ -71,7 +71,7 @@ export function StickersScreen({ profile, onBack }: { profile: Profile; onBack: 
             return (
               <StickyNote
                 key={sticker.id}
-                color={owned ? stickyColor(i) : '#E8E0D0'}
+                color={owned ? stickyColor(i) : '#D8D0C0'}
                 rotate={stickyTilt(i + 2)}
                 style={[styles.card, !owned && styles.cardLocked]}
               >
@@ -153,7 +153,8 @@ const styles = StyleSheet.create({
     flexBasis: 250,
     maxWidth: 400,
   },
-  cardLocked: { opacity: 0.72 },
+  // Grey paper says "not yet"; see-through let the city show through the text.
+  cardLocked: {},
   cardInner: {
     flexDirection: 'row',
     alignItems: 'center',
