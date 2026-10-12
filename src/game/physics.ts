@@ -152,6 +152,15 @@ function setMeta(body: Matter.Body, meta: BodyMeta) {
 
 export type FlightInput = { holding?: boolean; diving?: boolean; loop?: boolean };
 
+/** Distance from a point to the segment a-b. */
+function gapToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lengthSq = dx * dx + dy * dy;
+  const t = lengthSq > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSq)) : 0;
+  return Math.hypot(px - ax - dx * t, py - ay - dy * t);
+}
+
 export class GameWorld {
   readonly engine: Matter.Engine;
   readonly slots: RenderSlot[] = [];
@@ -218,6 +227,7 @@ export class GameWorld {
   private hoopState: { spec: HoopSpec; passed: boolean }[] = [];
   private prevPlaneX = 0;
   private prevPlanePos = { x: 0, y: 0 };
+  private prevPlaneAngle = 0;
 
   balloonsRemaining: number;
 
@@ -386,8 +396,8 @@ export class GameWorld {
           id: spec.id,
           kind: 'balloon',
           shape: 'circle',
-          w: BALLOON.radius * 2,
-          h: BALLOON.radius * 2,
+          w: BALLOON.drawRadius * 2,
+          h: BALLOON.drawRadius * 2,
           color: spec.color,
           stringLength,
         },
@@ -481,31 +491,37 @@ export class GameWorld {
   /**
    * The plane covers more ground in one step than a balloon is wide, so a
    * discrete collision test skips straight over them. Sweep the segment the
-   * plane actually travelled instead.
+   * plane actually travelled instead, for both its middle and its nose: the
+   * nose leads by almost half the drawn dart, and a balloon it touches should
+   * pop then, not a moment later or not at all if the dart is turning away.
    */
   private sweepBalloons() {
     const plane = this.plane;
     if (!plane) return;
 
-    const ax = this.prevPlanePos.x;
-    const ay = this.prevPlanePos.y;
-    const dx = plane.position.x - ax;
-    const dy = plane.position.y - ay;
-    const lengthSq = dx * dx + dy * dy;
-    const reach = BALLOON.radius + PHYSICS.planeRadius + 6;
+    const nose = PHYSICS.planeDrawLength * 0.45;
+    const from = this.prevPlanePos;
+    const to = plane.position;
+    const segments = [
+      [from.x, from.y, to.x, to.y],
+      [
+        from.x + Math.cos(this.prevPlaneAngle) * nose,
+        from.y + Math.sin(this.prevPlaneAngle) * nose,
+        to.x + Math.cos(plane.angle) * nose,
+        to.y + Math.sin(plane.angle) * nose,
+      ],
+    ];
+    const reach = BALLOON.drawRadius + PHYSICS.planeRadius + BALLOON.popMargin;
 
     for (const body of this.balloonBodies) {
       const meta = metaOf(body);
       if (!meta || meta.dead) continue;
 
-      const px = body.position.x - ax;
-      const py = body.position.y - ay;
-      const t = lengthSq > 0 ? Math.max(0, Math.min(1, (px * dx + py * dy) / lengthSq)) : 0;
-      const gapX = px - dx * t;
-      const gapY = py - dy * t;
-      if (gapX * gapX + gapY * gapY > reach * reach) continue;
-
-      this.applyDamage(body, meta.hp, Vector.magnitude(plane.velocity) * plane.mass);
+      for (const [ax, ay, bx, by] of segments) {
+        if (gapToSegment(body.position.x, body.position.y, ax, ay, bx, by) > reach) continue;
+        this.applyDamage(body, meta.hp, Vector.magnitude(plane.velocity) * plane.mass);
+        break;
+      }
     }
   }
 
@@ -671,6 +687,7 @@ export class GameWorld {
     this.stillSteps = 0;
     this.prevPlaneX = PLANE_START_X;
     this.prevPlanePos = { x: PLANE_START_X, y: PLANE_START_Y };
+    this.prevPlaneAngle = this.plane?.angle ?? 0;
     this.trail = [];
     for (const hoop of this.hoopState) hoop.passed = false;
   }
@@ -1041,6 +1058,7 @@ export class GameWorld {
     if (this.plane) {
       this.prevPlanePos.x = this.plane.position.x;
       this.prevPlanePos.y = this.plane.position.y;
+      this.prevPlaneAngle = this.plane.angle;
     }
     this.applyFlight(input);
     this.prevRoll = this.roll;

@@ -180,7 +180,12 @@ export const MATERIALS: Record<MaterialKey, Material> = {
 
 /** Balloons pop on contact, the way they should. */
 export const BALLOON = {
+  /** Size of the body that sits in and pushes on the stacks. */
   radius: 20,
+  /** Size the balloon is drawn: a bit bigger than its body, so it reads as a target. */
+  drawRadius: 26,
+  /** Extra room past touching that still pops it, so a close pass counts. */
+  popMargin: 12,
   hp: 4,
   density: 0.0004,
   restitution: 0.4,
