@@ -35,7 +35,7 @@ export const PHYSICS = {
   glideAngle: 0.19,
   diveAngle: 0.58,
   /** Radians of path change per step while the finger is held (before speed scaling). */
-  climbTurnRate: 0.05,
+  climbTurnRate: 0.11,
   /** Extra upward kick each step while climbing, on top of pointing the nose up. */
   climbLift: 0.03,
   /** Hold this long (ms) before the dart loops over the top and flies back. */

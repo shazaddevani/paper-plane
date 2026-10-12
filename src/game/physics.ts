@@ -758,7 +758,7 @@ export class GameWorld {
     }
 
     const speedFactor = holding || this.looping
-      ? Math.max(0.55, Math.min(PHYSICS.maxTurnBoost, (speed / PHYSICS.turnRefSpeed) ** 2))
+      ? Math.max(0.85, Math.min(PHYSICS.maxTurnBoost, (speed / PHYSICS.turnRefSpeed) ** 2))
       : Math.min(PHYSICS.maxTurnBoost, (speed / PHYSICS.turnRefSpeed) ** 2);
     const authority = rate * this.turnScale * speedFactor;
 
