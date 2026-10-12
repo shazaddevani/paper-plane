@@ -39,11 +39,16 @@ export const PHYSICS = {
   /** Extra upward kick each step while climbing, on top of pointing the nose up. */
   climbLift: 0.03,
   /** Hold this long (ms) before the dart loops over the top and flies back. */
-  loopAfterMs: 560,
-  /** Radians of path change per step during a loop-back. */
-  loopTurnRate: 0.16,
+  loopAfterMs: 800,
+  /** Loop size in world units. The dart is ~130 long, so smaller reads as a spin. */
+  loopMinRadius: 75,
+  loopMaxRadius: 130,
+  /** The top of a loop stays below this world y. */
+  loopTopY: 140,
   /** A loop under way keeps at least this much speed so it makes it over the top. */
-  loopMinSpeed: 6,
+  loopMinSpeed: 7,
+  /** Steps to ease from the climb into the full loop turn. */
+  loopRampSteps: 10,
   /** Below this the wing stops flying and the nose drops. */
   stallSpeed: 4,
   /** Hands-off cruising speed. Faster pitches up, slower pitches down. */

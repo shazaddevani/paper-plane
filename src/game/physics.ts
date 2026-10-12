@@ -174,6 +174,8 @@ export class GameWorld {
   /** 1 upright, -1 rolled over. Follows `facing` so a loop-back rolls upright. */
   private roll = 1;
   private loopStartFacing: 1 | -1 = 1;
+  private loopSteps = 0;
+  private loopRadius: number = PHYSICS.loopMaxRadius;
   private prevRoll = 1;
   private grounded = false;
   private crushed = false;
@@ -716,6 +718,13 @@ export class GameWorld {
     } else if (wantLoop && !this.didLoopThisHold && !this.looping) {
       this.looping = true;
       this.loopStartFacing = this.facing;
+      this.loopSteps = 0;
+      // Size the loop to the sky above the dart so it stays on screen.
+      const headroom = plane.position.y - PHYSICS.loopTopY;
+      this.loopRadius = Math.max(
+        PHYSICS.loopMinRadius,
+        Math.min(PHYSICS.loopMaxRadius, headroom / 2),
+      );
     }
 
     const velocity = plane.velocity;
@@ -749,7 +758,11 @@ export class GameWorld {
         ),
       );
       if (this.looping) {
-        rate = PHYSICS.loopTurnRate * this.loopScale;
+        // A round loop of a set size: turn rate is speed over radius. Ease in
+        // so the climb rolls into it instead of kinking.
+        this.loopSteps += 1;
+        const ease = Math.min(1, this.loopSteps / PHYSICS.loopRampSteps);
+        rate = (speed / this.loopRadius) * this.loopScale * (0.3 + 0.7 * ease);
       } else if (diving) {
         commanded = headingCommand(this.facing, PHYSICS.diveAngle * this.diveScale);
         rate = PHYSICS.turnRate * Math.max(0.7, this.diveScale);
@@ -773,7 +786,7 @@ export class GameWorld {
     const speedFactor = holding || this.looping
       ? Math.max(0.85, Math.min(PHYSICS.maxTurnBoost, (speed / PHYSICS.turnRefSpeed) ** 2))
       : Math.min(PHYSICS.maxTurnBoost, (speed / PHYSICS.turnRefSpeed) ** 2);
-    const authority = rate * this.turnScale * speedFactor;
+    const authority = this.looping ? rate * this.turnScale : rate * this.turnScale * speedFactor;
 
     let steered: number;
     if (this.looping) {
